@@ -13,7 +13,7 @@ variable "region" {
 variable "lambda_src_path" {
   type = string
   description = "path to the source code for the lambda function"
-  default = "blue/lambda-src"
+  default = "blue"
 }
 
 variable "glue_src_path" {
@@ -40,8 +40,14 @@ variable "vpc_subnets_cidr_block" {
   default     = ["10.0.0.0/24", "10.0.1.0/24"]
 }
 
-variable "map_public_ip_on_launch" {
-  type        = bool
-  description = "Map a public IP address for Subnet instances"
-  default     = true
+variable "subnet_public_cidr_block" {
+  type        = string
+  description = "CIDR Block for Public Subnets in VPC"
+  default     = "10.0.0.0/24"
+}
+
+variable "subnet_private_cidr_block" {
+  type        = string
+  description = "CIDR Block for Pirvate Subnets in VPC"
+  default     = "10.0.8.0/24"
 }

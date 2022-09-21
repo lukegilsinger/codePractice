@@ -38,7 +38,7 @@ app = async () => {
 
   console.log(await chuck())
 
-  // await writeS3({test: 1}, 'data/thing.json')
+  await writeS3({test: 1}, 'data/thing.json')
 
   console.log(url)
 
