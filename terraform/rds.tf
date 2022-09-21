@@ -10,8 +10,8 @@ resource "aws_db_instance" "postgres_instance" {
   # parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
 
-  vpc_security_group_ids   = ["${aws_security_group.rds_security_group.id}"]
-  # db_subnet_group_name     = "${var.rds_public_subnet_group}"
+  vpc_security_group_ids   = [aws_security_group.rds_security_group.id]
+  db_subnet_group_name     = aws_db_subnet_group._.id
   port                     = 5432
   publicly_accessible      = true
   multi_az                 = false
@@ -28,6 +28,11 @@ resource "aws_db_instance" "postgres_instance" {
   # password                 = "${trimspace(file("${path.module}/secrets/mydb1-password.txt"))}"
   # storage_type             = "gp2"
   # username                 = "mydb1"
+}
+
+resource "aws_db_subnet_group" "_" {
+  name       = lower("${var.project}-db-subnet-group")
+  subnet_ids = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
 }
 
 resource "aws_security_group" "rds_security_group" {

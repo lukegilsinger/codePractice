@@ -7,5 +7,5 @@ resource "aws_s3_bucket" "test-bucket" {
 resource "aws_s3_object" "glue-script" {
   bucket = aws_s3_bucket.test-bucket.id
   key = "scripts/glue-script.py"
-  source = "glue-src/hello-world.py"
+  source = "${var.glue_src_path}/hello-world.py"
 }

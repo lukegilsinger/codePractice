@@ -1,8 +1,8 @@
 data "archive_file" "lambda_zip_file_int" {
   type        = "zip"
-  output_path = "lambda-src/hello-world.zip"
+  output_path = "${var.lambda_src_path}/hello-world.zip"
   source {
-    content  = file("lambda-src/hello-world.js")
+    content  = file("${var.lambda_src_path}/hello-world.js")
     filename = "hello-world.js"
   }
 }
@@ -10,7 +10,7 @@ data "archive_file" "lambda_zip_file_int" {
 resource "aws_lambda_function" "test_lambda" {
   # If the file is not in the current working directory you will need to include a 
   # path.module in the filename.
-  filename      = "lambda-src/hello-world.zip"
+  filename      = "${var.lambda_src_path}/hello-world.zip"
   function_name = "${var.project}-test-function"
   role          = aws_iam_role.iam_role_lambda.arn
   handler       = "hello-world.app"

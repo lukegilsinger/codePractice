@@ -10,6 +10,18 @@ variable "region" {
   default     = "us-east-1"
 }
 
+variable "lambda_src_path" {
+  type = string
+  description = "path to the source code for the lambda function"
+  default = "blue/lambda-src"
+}
+
+variable "glue_src_path" {
+  type = string
+  description = "path to the source code for the glue job"
+  default = "blue/glue-src"
+}
+
 variable "enable_dns_hostnames" {
   type        = bool
   description = "Enable DNS hostnames in VPC"
