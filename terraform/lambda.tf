@@ -31,8 +31,8 @@ resource "aws_lambda_function" "test_lambda" {
 
 # SECURITY GROUPS #
 resource "aws_security_group" "lambda-sg" {
-  name   = "${var.project}-lambda_sg"
-  vpc_id = aws_vpc.du_vpc.id
+  name   = "test_lambda_sg"
+  vpc_id = aws_vpc.vpc.id
 
   # HTTP access from anywhere
   ingress {

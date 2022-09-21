@@ -34,7 +34,7 @@ resource "aws_security_group" "rds_security_group" {
   name = "${var.project}-rds-sg"
 
   description = "RDS (terraform-managed)"
-  vpc_id      = aws_vpc.du_vpc.id
+  vpc_id      = aws_vpc.vpc.id
 
   # Only Postgres in
   ingress {

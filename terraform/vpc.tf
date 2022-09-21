@@ -3,7 +3,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-resource "aws_vpc" "du-vpc" {
+resource "aws_vpc" "vpc" {
   cidr_block           = var.vpc_cidr_block
   enable_dns_hostnames = var.enable_dns_hostnames
 
@@ -13,7 +13,7 @@ resource "aws_vpc" "du-vpc" {
 }
 
 resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.du_vpc.id #referencing the above vpc
+  vpc_id = aws_vpc.vpc.id #referencing the above vpc
 
   tags = {
     Name = "${var.project}-internet-gateway"
@@ -22,7 +22,7 @@ resource "aws_internet_gateway" "igw" {
 
 resource "aws_subnet" "subnet1" {
   cidr_block              = var.vpc_subnets_cidr_block[0]
-  vpc_id                  = aws_vpc.du_vpc.id
+  vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = var.map_public_ip_on_launch
   availability_zone = data.aws_availability_zones.available.names[0]
 
@@ -33,7 +33,7 @@ resource "aws_subnet" "subnet1" {
 
 resource "aws_subnet" "subnet2" {
   cidr_block              = var.vpc_subnets_cidr_block[1]
-  vpc_id                  = aws_vpc.du_vpc.id
+  vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = var.map_public_ip_on_launch
   availability_zone = data.aws_availability_zones.available.names[1]
 
@@ -44,7 +44,7 @@ resource "aws_subnet" "subnet2" {
 
 # ROUTING #
 resource "aws_route_table" "rtb" {
-  vpc_id = aws_vpc.du_vpc.id
+  vpc_id = aws_vpc.vpc.id
 
   route { # outward traffic
     cidr_block = "0.0.0.0/0"
