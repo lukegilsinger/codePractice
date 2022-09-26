@@ -1,6 +1,7 @@
 const aws = require('aws-sdk');
 const request = require('request');
-const https = require('https')
+const https = require('https');
+const { Client } = require('pg');
 
 key = 'YC2Z5JLI4LD1EPUN'
 
@@ -28,9 +29,27 @@ writeS3 = async (metadata, filename = 'data/test.json') => {
     console.log(`File uploaded successfully at https:/` + s3Bucket +   `.s3.amazonaws.com/` + objectName);
     return result
   } catch (error) {
-    console.log(error);
+    console.log('ERROR', error);
     return 1
   }
+}
+
+writeRDS = async () => {
+  const client = new Client({
+    user: 'postgres',
+    host: 'du-blue-postgres-db.cv0vayctpgsq.us-east-1.rds.amazonaws.com',
+    database: 'postgres1',
+    password: 'postgres',
+    port: 5432
+  });
+  await client.connect();
+  await client.query("INSERT INTO TEST.TABLE1 (ID, THING) VALUES (3, 'test')");
+  const res = await client.query('SELECT * FROM test.table1');
+
+  client.end();
+
+  console.log('wrote RDS', res);
+
 }
 
 app = async () => {
@@ -42,25 +61,28 @@ app = async () => {
 
   console.log(url)
 
-  // request.get({
-    //   url: url,
-    //   json: true,
-    //   headers: {'User-Agent': 'request'}
-    // }, (err, res, data) => {
-    //   if (err) {
-    //     console.log('Error:', err);
-    //   } else if (res.statusCode !== 200) {
-    //     console.log('Status:', res.statusCode);
-    //   } else {
-    //     console.log(data["Meta Data"])
-    //     console.log(Object.keys(data))
-    //     try {
-    //       writeS3(data["Meta Data"])
-    //     } catch (e) {
-    //       console.log(e)
-    //     }
-    //   }
+  // await request.get({
+  //     url: url,
+  //     json: true,
+  //     headers: {'User-Agent': 'request'}
+  //   }, (err, res, data) => {
+  //     if (err) {
+  //       console.log('Error:', err);
+  //     } else if (res.statusCode !== 200) {
+  //       console.log('Status:', res.statusCode);
+  //     } else {
+  //       console.log(data["Meta Data"])
+  //       console.log(Object.keys(data))
+  //       try {
+  //         writeS3(data["Meta Data"])
+  //       } catch (e) {
+  //         console.log(e)
+  //       }
+  //     }
   // });
+
+  await writeRDS();
+
   return 0
 }
 
