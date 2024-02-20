@@ -1,4 +1,4 @@
-package main
+package demo
 
 // go run .
 // go run main.go
