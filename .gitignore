@@ -1,7 +1,10 @@
+# MAC
+.DS_Store
+
+
 *node_modules*
 *.terraform*
 *tfstate*
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

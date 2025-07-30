@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Task Manager</h1>
+
+    <h2>Add Task</h2>
+    <form id="addTaskForm">
+        <input type="text" id="taskTitle" placeholder="Task Title" required>
+        <input type="text" id="taskDescription" placeholder="Task Description">
+        <input type="text" id="taskStatus" placeholder="Task Status" required>
+        <input type="date" id="taskDueDate">
+        <button type="submit">Add Task</button>
+    </form>
+
+    <h2>Tasks List</h2>
+    <ul id="taskList"></ul>
+
+    <script>
+        document.getElementById('addTaskForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const taskTitle = document.getElementById('taskTitle').value;
+            const taskDescription = document.getElementById('taskDescription').value;
+            const taskStatus = document.getElementById('taskStatus').value;
+            const taskDueDate = document.getElementById('taskDueDate').value;
+
+            fetch('/add-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: taskTitle, description: taskDescription, status: taskStatus, due_date: taskDueDate })
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('taskTitle').value = '';
+                    document.getElementById('taskDescription').value = '';
+                    document.getElementById('taskStatus').value = '';
+                    document.getElementById('taskDueDate').value = '';
+                    loadTasks();
+                } else {
+                    alert('Failed to add task');
+                }
+            });
+        });
+
+        function loadTasks() {
+            fetch('/get-tasks')
+                .then(response => response.json())
+                .then(data => {
+                    const taskList = document.getElementById('taskList');
+                    taskList.innerHTML = '';
+                    data.forEach(task => {
+                        const li = document.createElement('li');
+                        li.textContent = `${task.title} - ${task.status} (Due: ${task.due_date})`;
+                        taskList.appendChild(li);
+                    });
+                });
+        }
+
+        // Load tasks on page load
+        loadTasks();
+    </script>
+</body>
+</html>

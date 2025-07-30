@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package tasks;
+option go_package = ".;tasks";
+
+message Task {
+    int32 id = 1;
+    string title = 2;
+    string description = 3;
+    string status = 4;
+    string due_date = 5;
+}
+
+message TaskList {
+    repeated Task tasks = 1;
+}
+
+// Service definition
+service TaskService {
+    // RPC method to retrieve all tasks
+    rpc GetTasks(google.protobuf.Empty) returns (TaskList);
+}
