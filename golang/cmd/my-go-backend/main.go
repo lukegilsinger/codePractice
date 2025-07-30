@@ -11,6 +11,9 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
+	"google.golang.org/protobuf/proto"
+
+	pb "my-go-backend/pb"
 )
 
 type Item struct {
@@ -138,20 +141,28 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var tasks []Task
+	var taskList pb.TaskList
 	for rows.Next() {
-		var task Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
+		var task pb.Task
+		if err := rows.Scan(&task.Id, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
 			http.Error(w, "Failed to scan task", http.StatusInternalServerError)
 			return
 		}
-		tasks = append(tasks, task)
+		taskList.Tasks = append(taskList.Tasks, &task)
 	}
 
 	fmt.Printf("got all the tasks\n")
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+	// Serialize the response to protobuf
+	responseData, err := proto.Marshal(&taskList)
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
 }
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
