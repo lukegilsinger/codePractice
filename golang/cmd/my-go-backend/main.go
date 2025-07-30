@@ -14,6 +14,14 @@ type Item struct {
 	Name string `json:"name"`
 }
 
+type Task struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	DueDate     string `json:"due_date"`
+}
+
 var db *sql.DB
 
 func initDB() {
@@ -81,14 +89,6 @@ func getItemsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(items)
-}
-
-type Task struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	DueDate     string `json:"due_date"`
 }
 
 func createTaskHandler(w http.ResponseWriter, r *http.Request) {
