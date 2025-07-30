@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Go Frontend</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Item Manager</h1>
+
+    <h2>Add Item</h2>
+    <form id="addItemForm">
+        <input type="text" id="itemName" placeholder="Enter item name" required>
+        <button type="submit">Add Item</button>
+    </form>
+
+    <h2>Items List</h2>
+    <ul id="itemList"></ul>
+
+    <script>
+        document.getElementById('addItemForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const itemName = document.getElementById('itemName').value;
+
+            fetch('/add-item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: itemName })
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('itemName').value = '';
+                    loadItems();
+                } else {
+                    alert('Failed to add item');
+                }
+            });
+        });
+
+        function loadItems() {
+            fetch('/get-items')
+                .then(response => response.json())
+                .then(data => {
+                    const itemList = document.getElementById('itemList');
+                    itemList.innerHTML = '';
+                    data.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item.name;
+                        itemList.appendChild(li);
+                    });
+                });
+        }
+
+        // Load items on page load
+        loadItems();
+    </script>
+</body>
+</html>

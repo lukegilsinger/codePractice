@@ -1,3 +1,6 @@
+# GOLANG
+.DS_Store
+
 *node_modules*
 *.terraform*
 *tfstate*
