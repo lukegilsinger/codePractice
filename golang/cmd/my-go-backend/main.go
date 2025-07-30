@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -152,6 +153,7 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("getting a task\n")
 	idStr := r.URL.Path[len("/task/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -239,21 +241,27 @@ func main() {
 	initDB()
 	defer db.Close()
 
-	http.HandleFunc("/add-item", addItemHandler)
-	http.HandleFunc("/get-items", getItemsHandler)
+	r := mux.NewRouter()
 
-	http.HandleFunc("/add-task", createTaskHandler)
+	// http.HandleFunc("/add-item", addItemHandler)
+	// http.HandleFunc("/get-items", getItemsHandler)
+
+	// http.HandleFunc("/add-task", createTaskHandler)
 	http.HandleFunc("/get-tasks", getTasksHandler)
-	http.HandleFunc("/update-task", updateTaskHandler)
-	http.HandleFunc("/delete-task", deleteTaskHandler)
+	// http.HandleFunc("/update-task", updateTaskHandler)
+	// http.HandleFunc("/delete-task", deleteTaskHandler)
 
-	http.HandleFunc("/tasks", getTasksHandler)    // GET /tasks
-	http.HandleFunc("/task/", getTaskHandler)     // GET /tasks/{id}
-	http.HandleFunc("/task", createTaskHandler)   // POST /tasks
-	http.HandleFunc("/tasku/", updateTaskHandler) // PUT /tasks/{id}
-	http.HandleFunc("/taskd/", deleteTaskHandler) // DELETE /tasks/
+	r.HandleFunc("/tasks", getTasksHandler).Methods("GET")                 // GET /tasks
+	r.HandleFunc("/task", createTaskHandler).Methods("POST")               // POST /tasks
+	r.HandleFunc("/task/{id:[0-9]+}", getTaskHandler).Methods("GET")       // GET /tasks/{id}
+	r.HandleFunc("/task/{id:[0-9]+}", updateTaskHandler).Methods("PUT")    // PUT /tasks/{id}
+	r.HandleFunc("/task/{id:[0-9]+}", deleteTaskHandler).Methods("DELETE") // DELETE /tasks/
 
-	http.Handle("/", http.FileServer(http.Dir("./web")))
+	// http.Handle("/", http.FileServer(http.Dir("./web"))
+
+	// Serve static files from the "web" directory
+	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./web/"))))
+	http.Handle("/", r)
 
 	fmt.Println("Server is running on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
