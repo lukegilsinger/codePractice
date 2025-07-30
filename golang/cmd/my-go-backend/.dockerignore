@@ -1,0 +1,15 @@
+# Ignore the Go build cache
+*.o
+*.a
+
+# Ignore the vendor directory
+/vendor
+
+# Ignore the log files
+*.log
+
+# Ignore the local database file
+# database.db
+
+# Ignore the web directory if you don't want to copy it
+# /web/*
