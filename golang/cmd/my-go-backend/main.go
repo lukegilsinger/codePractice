@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -104,14 +105,26 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the task into the database
-	_, err := db.Exec("INSERT INTO tasks (title, description, status, due_date) VALUES (?, ?, ?, ?)",
+	result, err := db.Exec("INSERT INTO tasks (title, description, status, due_date) VALUES (?, ?, ?, ?)",
 		task.Title, task.Description, task.Status, task.DueDate)
 	if err != nil {
 		http.Error(w, "Failed to create task", http.StatusInternalServerError)
 		return
 	}
 
+	id, err := result.LastInsertId()
+	if err != nil {
+		http.Error(w, "Failed to retrieve task ID", http.StatusInternalServerError)
+		return
+	}
+
+	task.ID = int(id)
+
+	fmt.Printf("created task %v\n", id)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(task)
 }
 
 func getTasksHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,13 +145,49 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 		tasks = append(tasks, task)
 	}
 
+	fmt.Printf("got all the tasks\n")
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tasks)
+}
+
+func getTaskHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Path[len("/task/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	row := db.QueryRow("SELECT id, title, description, status, due_date FROM tasks WHERE id = ?", id)
+	var task Task
+	err = row.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Task not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to get task", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("got task %v\n", id)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(task)
 }
 
 func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.URL.Path[len("/tasku/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
 		return
 	}
 
@@ -149,12 +198,14 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the task in the database
-	_, err := db.Exec("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ? WHERE id = ?",
-		task.Title, task.Description, task.Status, task.DueDate, task.ID)
+	_, err = db.Exec("UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ? WHERE id = ?",
+		task.Title, task.Description, task.Status, task.DueDate, id)
 	if err != nil {
 		http.Error(w, "Failed to update task", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Printf("udpated task %v\n", id)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -165,18 +216,21 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	taskID := r.URL.Query().Get("id")
-	if taskID == "" {
-		http.Error(w, "Missing task ID", http.StatusBadRequest)
+	idStr := r.URL.Path[len("/taskd/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
 		return
 	}
 
 	// Delete the task from the database
-	_, err := db.Exec("DELETE FROM tasks WHERE id = ?", taskID)
+	_, err = db.Exec("DELETE FROM tasks WHERE id = ?", id)
 	if err != nil {
 		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Printf("deleted task %v\n", id)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -185,10 +239,20 @@ func main() {
 	initDB()
 	defer db.Close()
 
+	http.HandleFunc("/add-item", addItemHandler)
+	http.HandleFunc("/get-items", getItemsHandler)
+
 	http.HandleFunc("/add-task", createTaskHandler)
 	http.HandleFunc("/get-tasks", getTasksHandler)
 	http.HandleFunc("/update-task", updateTaskHandler)
 	http.HandleFunc("/delete-task", deleteTaskHandler)
+
+	http.HandleFunc("/tasks", getTasksHandler)    // GET /tasks
+	http.HandleFunc("/task/", getTaskHandler)     // GET /tasks/{id}
+	http.HandleFunc("/task", createTaskHandler)   // POST /tasks
+	http.HandleFunc("/tasku/", updateTaskHandler) // PUT /tasks/{id}
+	http.HandleFunc("/taskd/", deleteTaskHandler) // DELETE /tasks/
+
 	http.Handle("/", http.FileServer(http.Dir("./web")))
 
 	fmt.Println("Server is running on port 8080")
