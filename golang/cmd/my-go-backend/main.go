@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -238,6 +240,9 @@ func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	logger.Info("Info message", "key2", "value2")
 	initDB()
 	defer db.Close()
 
