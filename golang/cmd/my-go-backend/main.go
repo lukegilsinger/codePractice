@@ -11,9 +11,8 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
-	"google.golang.org/protobuf/proto"
-
-	pb "my-go-backend/pb"
+	// "google.golang.org/protobuf/proto"
+	// pb "my-go-backend/pb"
 )
 
 type Item struct {
@@ -141,28 +140,34 @@ func getTasksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	var taskList pb.TaskList
+	// var taskList pb.TaskList
+	var tasks []Task
 	for rows.Next() {
-		var task pb.Task
-		if err := rows.Scan(&task.Id, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
+		// var task pb.Task
+		var task Task
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
 			http.Error(w, "Failed to scan task", http.StatusInternalServerError)
 			return
 		}
-		taskList.Tasks = append(taskList.Tasks, &task)
+		// taskList.Tasks = append(taskList.Tasks, &task)
+		tasks = append(tasks, task)
 	}
 
 	fmt.Printf("got all the tasks\n")
 
 	// Serialize the response to protobuf
-	responseData, err := proto.Marshal(&taskList)
-	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
-	}
+	// responseData, err := proto.Marshal(&taskList)
+	// if err != nil {
+	// 	http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseData)
+	// w.Header().Set("Content-Type", "application/octet-stream")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(responseData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
 }
 
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
