@@ -20,19 +20,24 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o mygobackend .
+# RUN go build -o mygobackend .
+RUN go build -o /mygobackend
 
-# Use a smaller image for the final stage
-FROM alpine:latest
+# # Use a smaller image for the final stage
+# FROM alpine:latest
 
-# Set the working directory in the final image
-WORKDIR /root/
+# # Set the working directory in the final image
+# WORKDIR /app
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/mygobackend .
+# # Copy the compiled binary from the builder stage
+# COPY --from=builder /app/mygobackend .
+
+RUN ls 
+
+RUN pwd
 
 # Expose the port that your application listens on
 EXPOSE 8080
 
 # Command to run the application
-CMD ["./mygobackend"]
+CMD ["/mygobackend"]
