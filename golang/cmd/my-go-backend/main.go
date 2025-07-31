@@ -70,7 +70,7 @@ func main() {
 	// http.HandleFunc("/get-items", getItemsHandler)
 
 	// http.HandleFunc("/add-task", createTaskHandler)
-	http.HandleFunc("/get-tasks", getTasksHandler)
+	r.HandleFunc("/get-tasks", getTasksHandler)
 	// http.HandleFunc("/update-task", updateTaskHandler)
 	// http.HandleFunc("/delete-task", deleteTaskHandler)
 
@@ -197,6 +197,7 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTasksHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("getting all tasks\n")
 	rows, err := db.Query("SELECT id, title, description, status, due_date FROM tasks")
 	if err != nil {
 		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
