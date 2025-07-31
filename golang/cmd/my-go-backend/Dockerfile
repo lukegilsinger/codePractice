@@ -4,11 +4,11 @@ FROM golang:1.24 AS builder
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install CA certificates
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# # Install CA certificates
+# RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Set the GOPROXY environment variable
-ENV GOPROXY=https://proxy.golang.org,direct
+# # Set the GOPROXY environment variable
+# ENV GOPROXY=https://proxy.golang.org,direct
 
 # Copy the go.mod and go.sum files to the working directory
 COPY go.mod go.sum ./
@@ -20,7 +20,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o myapp .
+RUN go build -o mygobackend .
 
 # Use a smaller image for the final stage
 FROM alpine:latest
@@ -29,10 +29,10 @@ FROM alpine:latest
 WORKDIR /root/
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /app/myapp .
+COPY --from=builder /app/mygobackend .
 
 # Expose the port that your application listens on
 EXPOSE 8080
 
 # Command to run the application
-CMD ["./myapp"]
+CMD ["./mygobackend"]
