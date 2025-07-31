@@ -1,17 +1,17 @@
 
 ## TODO
-dockerize
-env configs
-makefile
-better packages
-protobuf api
-database improvements
-testing
-terraform/gcp
-login
-create actual website
-fx injection
+- [x] dockerize
+- [x] env configs
+- [x] makefile
+- [x] better packages
+- [ ] protobuf api
+- [ ] database improvements
+- [ ] testing
+- [ ] terraform/gcp
+- [ ] login
+- [ ] create actual website
+- [ ] fx injection
 
-APP
+## APP
 everyday checklist
 
