@@ -79,7 +79,7 @@
                     taskStatusList.innerHTML = '';
                     data.forEach(ts => {
                         const li = document.createElement('li');
-                        li.textContent = `${ts.title} - ${ts.completed} (Done: ${ts.completion_date})`;
+                        li.textContent = `(${ts.completion_date}): ${ts.title} - ${ts.completed ? 'Complete' : 'Not Complete'}`;
                         taskStatusList.appendChild(li);
                     });
                 });

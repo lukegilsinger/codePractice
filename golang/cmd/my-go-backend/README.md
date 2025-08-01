@@ -4,24 +4,40 @@
 - [x] env configs
 - [x] makefile
 - [x] better packages
-- [ ] service layer
+- [ ] service layer - crud
+    - get
+    - create
+    - update
+    - delete
 - [x] more tables
-- [ ] task history
+- [x] task history
 - [ ] debugger launch.json
 - [ ] error handling
 - [ ] logging
 - [ ] linting
-- [ ] context package
+- [ ] html improvements
+    - list
+    - checkboxes
+    - prioritization
 - [ ] protobuf api
 - [ ] database improvements
 - [ ] testing
+    - unit
+- [ ] deploy website
 - [ ] terraform/gcp
 - [ ] ci/cd - github actions
+    - run tests
 - [ ] login
-- [ ] deploy website
-- [ ] fx injection
+- [ ] other languages
+    - python
+    - node.js
+    - java/scala
 
-## APP
+## Learning
+- [ ] fx injection
+- [ ] context package
+
+## APP ideas
 everyday checklist
 file drop
 
