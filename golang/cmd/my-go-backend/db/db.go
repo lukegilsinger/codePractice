@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -19,22 +20,33 @@ func InitDB(databaseFile string) {
 		panic(err)
 	}
 
-	// Create tasks table if it doesn't exist
-	sqlStmt := `
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        status TEXT NOT NULL,
-        due_date DATE
-    );`
-	if _, err = db.Exec(sqlStmt); err != nil {
-		panic(err)
+	createScripts := []string{
+		"create_tasks",
+		"create_items",
+		"create_todo_tasks",
+		"create_task_history",
 	}
+	for _, fileName := range createScripts {
+		createTable(fileName)
+	}
+
 	fmt.Println("sqlite db is running")
 }
 
 // GetDB returns the database connection
 func GetDB() *sql.DB {
 	return db
+}
+
+func createTable(sqlFile string) {
+	// Read the SQL file
+	filePath := fmt.Sprintf("./db/%v.sql", sqlFile)
+	fmt.Printf("creating table from %s\n", filePath)
+	sqlStmt, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Printf("Failed to read SQL file: %v\n", err)
+	}
+	if _, err = db.Exec(string(sqlStmt)); err != nil {
+		panic(err)
+	}
 }
