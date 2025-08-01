@@ -15,7 +15,7 @@ buildrun: build
 	APP_ENV=dev ./$(APP_NAME)
 
 # Run the application
-run:
+start:
 	@echo "Running the application..."
 	APP_ENV=dev go run main.go
 

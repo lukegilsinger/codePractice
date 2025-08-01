@@ -23,8 +23,9 @@ func InitDB(databaseFile string) {
 	createScripts := []string{
 		"create_tasks",
 		"create_items",
-		"create_todo_tasks",
+		"create_todo_tasks", // not in use
 		"create_task_history",
+		"create_users",
 	}
 	for _, fileName := range createScripts {
 		createTable(fileName)
