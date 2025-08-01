@@ -63,8 +63,9 @@ func main() {
 
 	r := mux.NewRouter()
 
-	// http.HandleFunc("/add-item", addItemHandler)
-	// http.HandleFunc("/get-items", getItemsHandler)
+	r.HandleFunc("/items", handlers.GetItemsHandler).Methods("GET")
+	r.HandleFunc("/item", handlers.AddItemHandler).Methods("POST")
+	r.HandleFunc("/item/{id:[0-9]+}", handlers.GetItemsHandler).Methods("GET")
 
 	// http.HandleFunc("/add-task", createTaskHandler)
 	r.HandleFunc("/get-tasks", handlers.GetTasksHandler)
@@ -77,6 +78,8 @@ func main() {
 	r.HandleFunc("/task/{id:[0-9]+}", handlers.UpdateTaskHandler).Methods("PUT")    // PUT /tasks/{id}
 	r.HandleFunc("/task/{id:[0-9]+}", handlers.DeleteTaskHandler).Methods("DELETE") // DELETE /tasks/
 
+	r.HandleFunc("/task-history", handlers.GetTaskHistoryHandler).Methods("GET")   // GET /task-history
+	r.HandleFunc("/task-history", handlers.CreateTaskEventHandler).Methods("POST") // POST /task-history
 	// http.Handle("/", http.FileServer(http.Dir("./web"))
 
 	// Serve static files from the "web" directory
