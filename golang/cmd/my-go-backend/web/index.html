@@ -66,5 +66,27 @@
         // Load tasks on page load
         loadTasks();
     </script>
+
+    <h2>Tasks Status List</h2>
+    <ul id="taskStatusList"></ul>
+
+    <script>
+        function loadTasks() {
+            fetch('/get-tasks-statuses')
+                .then(response => response.json())
+                .then(data => {
+                    const taskStatusList = document.getElementById('taskStatusList');
+                    taskStatusList.innerHTML = '';
+                    data.forEach(ts => {
+                        const li = document.createElement('li');
+                        li.textContent = `${ts.title} - ${ts.completed} (Done: ${ts.completion_date})`;
+                        taskStatusList.appendChild(li);
+                    });
+                });
+        }
+
+        // Load tasks on page load
+        loadTasks();
+    </script>
 </body>
 </html>

@@ -82,6 +82,8 @@ func main() {
 	r.HandleFunc("/task-history", handlers.CreateTaskEventHandler).Methods("POST") // POST /task-history
 	// http.Handle("/", http.FileServer(http.Dir("./web"))
 
+	r.HandleFunc("/get-tasks-statuses", handlers.GetTaskStatusHandler).Methods("GET") // GET
+
 	// Serve static files from the "web" directory
 	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./web/"))))
 	http.Handle("/", r)
