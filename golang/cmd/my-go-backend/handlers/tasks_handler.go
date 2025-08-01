@@ -8,16 +8,12 @@ import (
 	"strconv"
 
 	"my-go-backend/db"
+	"my-go-backend/service"
 
 	_ "github.com/mattn/go-sqlite3"
 	// "google.golang.org/protobuf/proto"
 	// pb "my-go-backend/pb"
 )
-
-type Item struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
 
 type Task struct {
 	ID          int    `json:"id"`
@@ -25,50 +21,6 @@ type Task struct {
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	DueDate     string `json:"due_date"`
-}
-
-func AddItemHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var item Item
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	// Insert the item into the database
-	_, err := db.GetDB().Exec("INSERT INTO items (name) VALUES (?)", item.Name)
-	if err != nil {
-		http.Error(w, "Failed to add item", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
-func GetItemsHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.GetDB().Query("SELECT id, name FROM items")
-	if err != nil {
-		http.Error(w, "Failed to get items", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var items []Item
-	for rows.Next() {
-		var item Item
-		if err := rows.Scan(&item.ID, &item.Name); err != nil {
-			http.Error(w, "Failed to scan item", http.StatusInternalServerError)
-			return
-		}
-		items = append(items, item)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
 }
 
 func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -147,6 +99,7 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("getting a task\n")
+
 	idStr := r.URL.Path[len("/task/"):]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -154,9 +107,16 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.GetDB().QueryRow("SELECT id, title, description, status, due_date FROM tasks WHERE id = ?", id)
+	params := service.GetParams{
+		Id:      id,
+		Table:   "tasks",
+		Columns: []string{"id", "title", "description", "status", "due_date"},
+	}
+
+	res, err := service.Get(params)
+
 	var task Task
-	err = row.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate)
+	err = res.Item.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Task not found", http.StatusNotFound)
