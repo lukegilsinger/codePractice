@@ -12,14 +12,15 @@
 - [x] more tables
 - [x] task history
 - [ ] debugger launch.json
+- [ ] users/login
 - [ ] error handling
 - [ ] logging
 - [ ] linting
+- [ ] protobuf api
 - [ ] html improvements
     - list
     - checkboxes
     - prioritization
-- [ ] protobuf api
 - [ ] database improvements
 - [ ] testing
     - unit
@@ -27,17 +28,16 @@
 - [ ] terraform/gcp
 - [ ] ci/cd - github actions
     - run tests
-- [ ] login
+
+## Learning
+- [ ] fx injection
+- [ ] context package
 - [ ] other languages
     - python
     - node.js
     - java/scala
 
-## Learning
-- [ ] fx injection
-- [ ] context package
-
 ## APP ideas
 everyday checklist
-file drop
+file drop/download
 
