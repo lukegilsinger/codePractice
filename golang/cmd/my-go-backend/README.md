@@ -11,8 +11,9 @@
     - delete
 - [x] more tables
 - [x] task history
-- [ ] debugger launch.json
+- [x] debugger launch.json
 - [ ] users/login
+- [ ] kafka and pub/sub connectors
 - [ ] error handling
 - [ ] logging
 - [ ] linting

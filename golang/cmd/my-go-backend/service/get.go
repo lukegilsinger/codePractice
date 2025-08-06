@@ -16,10 +16,11 @@ type GetParams struct {
 }
 
 type GetResult struct {
-	Item *sql.Row
+	Item  *sql.Row
+	Items *sql.Rows
 }
 
-func Get(params GetParams) (*GetResult, error) {
+func GetOnId(params GetParams) (*GetResult, error) {
 	fmt.Println("Running Query")
 	columnList := strings.Join(params.Columns, ", ")
 	selectString := fmt.Sprintf("SELECT %s FROM %s WHERE id = %d", columnList, params.Table, params.Id)
@@ -30,4 +31,17 @@ func Get(params GetParams) (*GetResult, error) {
 		Item: row,
 	}
 	return &res, nil
+}
+
+func GetAll(params GetParams) (*sql.Rows, error) {
+	fmt.Println("Running Query")
+	columnList := strings.Join(params.Columns, ", ")
+	selectString := fmt.Sprintf("SELECT %s FROM %s", columnList, params.Table)
+	fmt.Println(selectString)
+	rows, err := db.GetDB().Query(selectString)
+	if err != nil {
+		fmt.Println("Failed to get tasks")
+		return nil, err
+	}
+	return rows, err
 }
