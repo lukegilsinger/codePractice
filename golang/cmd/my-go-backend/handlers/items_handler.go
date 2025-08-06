@@ -65,6 +65,7 @@ func GetItemsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetItemHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: not right.  where clause. query row
 	fmt.Printf("getting an item\n")
 	rows, err := db.GetDB().Query("SELECT id, name FROM items")
 	if err != nil {
