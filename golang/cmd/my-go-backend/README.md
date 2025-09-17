@@ -1,3 +1,5 @@
+## How to use
+`make start`
 
 ## TODO
 - [x] dockerize
