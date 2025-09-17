@@ -1,0 +1,804 @@
+Guys, I just ran this query and you can check if your ID has a null email. If you do, that means you lost access: {
+
+  "data": {
+
+    "getGroupById": {
+
+      "id": "MARKET360",
+
+      "members": {
+
+        "count": 65,
+
+        "members": [
+
+          {
+
+            "preferredName": {
+
+              "full": "HussainReddy Aavula"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Ravikumar Agarwal"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Justin Appelgren"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Leobardo Ascencio"
+
+            },
+
+            "email": "leobardo.ascencio@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Pamidi Balaji"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Matthew Boyett"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Ryan Clarke"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Pawel Czyz"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Siva Eluru"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Shirley Fernandez"
+
+            },
+
+            "email": "shirley.fernandez.ext@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Brighton Fleetwood"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Julia Mary Francis"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Hari Kiran Gannamani"
+
+            },
+
+            "email": "harikiran.gannamani.ext@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Shalakha Gupta"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Harshad Jaju"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Praneeth Jasti"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Corey Jones"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Vishnuvardhan Kalva"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sandeep Katika"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Ashwini Ketkar"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sarik Koirala"
+
+            },
+
+            "email": "sarik.koirala.ext@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Craig Kolaks"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Renuka Kondapalli"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Jimmy Krebs"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Kulanthaivelu Krishnan"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Christopher Krummenacher"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Kyle Lacy"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "PraveenKumar Lambade"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Tamara Leahy"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sai Lella"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Justin MacDonald"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Patrick McNeely"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Brian Middleton"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Caroline Mulia"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sarangan Muthiah Gowder Gunasekaran"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Brian Myers"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Raghavendra Nagaraj"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Suresh Nalluri"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Jonathan Nuttall"
+
+            },
+
+            "email": "jonathan.nuttall@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Dayne Okamura"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Madhukar Patibandla"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "NAGA Pavuluri"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Paul Matt Pedone"
+
+            },
+
+            "email": "paulmatt.pedone.ext@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Pratibha Pentapati"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Steve Perkins"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Dominika Piosik"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Praveen Poosapati"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "James Putterman"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Jing Randel"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Meenarani Rani"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sivangi Raychoudhury"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Susan Rhoades"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Anna Rusak"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Radhakrishna Santhapuri Venkata"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Amgad Sirag"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Marco Soares"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Desiree Teter"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Satish Udakhe"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Sri Jagadeesh Vanapalli"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Alex Wade"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Michael F. Wagner"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Muhammad Waheed"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Mirian Yamazato"
+
+            },
+
+            "email": "mirian.yamazato@bayer.com"
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Daniel Zaniewski"
+
+            },
+
+            "email": null
+
+          },
+
+          {
+
+            "preferredName": {
+
+              "full": "Ruotong Zhu"
+
+            },
+
+            "email": null
+
+          }
+
+        ]
+
+      }
+
+    }
+
+  }
+
+}
+ 
