@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+	"todo-list-2/internal/logger"
 	"todo-list-2/internal/models"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -89,10 +90,14 @@ func (db *DB) Close() error {
 // USER CRUD OPERATIONS
 // ===================================================================
 
+// Update the CreateUser method with logging:
 func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
+	start := time.Now()
+
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		logger.LogDBOperation("hash_password", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
@@ -100,10 +105,13 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	var count int
 	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", req.Username).Scan(&count)
 	if err != nil {
+		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 	if count > 0 {
-		return nil, errors.New("username already exists")
+		err := errors.New("username already exists")
+		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
+		return nil, err
 	}
 
 	// Insert user
@@ -118,20 +126,29 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	user := &models.User{}
 	err = row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
+		logger.LogDBOperation("create_user", "users", 0, time.Since(start), err)
 		return nil, err
 	}
+
+	logger.LogDBOperation("create_user", "users", user.ID, time.Since(start), nil)
+	logger.Logger.Info("New user created", "user_id", user.ID, "username", user.Username)
 
 	// Create default categories for new user
 	err = db.createDefaultCategoriesForUser(user.ID)
 	if err != nil {
+		logger.Logger.Warn("Failed to create default categories", "user_id", user.ID, "error", err.Error())
 		// Don't fail user creation if default categories fail
-		// Just log it (in a real app, you'd use proper logging)
+	} else {
+		logger.Logger.Debug("Default categories created", "user_id", user.ID)
 	}
 
 	return user, nil
 }
 
+// Update AuthenticateUser method:
 func (db *DB) AuthenticateUser(username, password string) (*models.User, error) {
+	start := time.Now()
+
 	query := `SELECT id, username, email, password, created_at, updated_at FROM users WHERE username = ?`
 
 	user := &models.User{}
@@ -139,16 +156,21 @@ func (db *DB) AuthenticateUser(username, password string) (*models.User, error) 
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
+			err = errors.New("user not found")
 		}
+		logger.LogDBOperation("authenticate_user", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
 	// Check password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return nil, errors.New("invalid password")
+		err = errors.New("invalid password")
+		logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), err)
+		return nil, err
 	}
+
+	logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), nil)
 
 	// Clear password before returning
 	user.Password = ""

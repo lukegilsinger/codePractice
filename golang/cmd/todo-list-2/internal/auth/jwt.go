@@ -1,6 +1,4 @@
-// ===================================================================
-// internal/auth/jwt.go (NEW FILE)
-// ===================================================================
+// internal/auth/jwt.go (UPDATED with configurable secret)
 package auth
 
 import (
@@ -10,7 +8,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("your-secret-key-change-this-in-production")
+var jwtSecret []byte
+
+// SetJWTSecret sets the JWT signing secret
+func SetJWTSecret(secret string) {
+	jwtSecret = []byte(secret)
+}
 
 type Claims struct {
 	UserID   int    `json:"user_id"`
