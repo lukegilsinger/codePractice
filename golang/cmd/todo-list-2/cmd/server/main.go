@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
 	"todo-list-2/internal/auth"
 	"todo-list-2/internal/config"
 	"todo-list-2/internal/database"
@@ -26,36 +27,39 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize logger
-	logger.Init(cfg.LogLevel, cfg.LogFormat)
+	logger := logger.Init(cfg.LogLevel, cfg.LogFormat)
 	logger.LogStartup(cfg.Port)
+
+	logger.Info("Logger Created successfully")
+	logger.Info("Logger Created successfully")
 
 	// Set JWT secret
 	auth.SetJWTSecret(cfg.JWTSecret)
 
 	// Initialize database
-	db, err := database.New(cfg.DatabaseURL)
+	db, err := database.New(cfg.DatabaseURL, logger)
 	if err != nil {
-		logger.Logger.Error("Failed to connect to database", "error", err.Error())
+		logger.Error("Failed to connect to database", "error", err.Error())
 		os.Exit(1)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			logger.Logger.Error("Failed to close database", "error", err.Error())
+			logger.Error("Failed to close database", "error", err.Error())
 		}
 	}()
 
-	logger.Logger.Info("Database connected successfully")
+	logger.Info("Database connected successfully")
 
 	// Initialize handlers
 	todoHandler := handlers.NewTodoHandler(db)
 	categoryHandler := handlers.NewCategoryHandler(db)
-	authHandler := handlers.NewAuthHandler(db)
+	authHandler := handlers.NewAuthHandler(db, logger)
 
 	// Setup routes
 	r := mux.NewRouter()
 
 	// Add logging middleware to all routes
-	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.LoggingMiddleware(logger))
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
@@ -113,9 +117,9 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		logger.Logger.Info("Server listening", "port", cfg.Port)
+		logger.Info("Server listening", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Logger.Error("Failed to start server", "error", err.Error())
+			logger.Error("Failed to start server", "error", err.Error())
 			os.Exit(1)
 		}
 	}()
@@ -132,9 +136,9 @@ func main() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Logger.Error("Server forced to shutdown", "error", err.Error())
+		logger.Error("Server forced to shutdown", "error", err.Error())
 		os.Exit(1)
 	}
 
-	logger.Logger.Info("Server exited successfully")
+	logger.Info("Server exited successfully")
 }

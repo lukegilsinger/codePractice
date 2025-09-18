@@ -13,16 +13,20 @@ import (
 )
 
 type DB struct {
-	conn *sql.DB
+	conn   *sql.DB
+	logger *logger.Logger
 }
 
-func New(dataSourceName string) (*DB, error) {
+func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
 	conn, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
-	db := &DB{conn: conn}
+	db := &DB{
+		conn:   conn,
+		logger: logger,
+	}
 	return db, db.createTables()
 }
 
@@ -97,7 +101,7 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		logger.LogDBOperation("hash_password", "users", 0, time.Since(start), err)
+		db.logger.LogDBOperation("hash_password", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
@@ -105,12 +109,12 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	var count int
 	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", req.Username).Scan(&count)
 	if err != nil {
-		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
+		db.logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 	if count > 0 {
 		err := errors.New("username already exists")
-		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
+		db.logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
@@ -126,20 +130,20 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	user := &models.User{}
 	err = row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
-		logger.LogDBOperation("create_user", "users", 0, time.Since(start), err)
+		db.logger.LogDBOperation("create_user", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
-	logger.LogDBOperation("create_user", "users", user.ID, time.Since(start), nil)
-	logger.Logger.Info("New user created", "user_id", user.ID, "username", user.Username)
+	db.logger.LogDBOperation("create_user", "users", user.ID, time.Since(start), nil)
+	db.logger.Info("New user created", "user_id", user.ID, "username", user.Username)
 
 	// Create default categories for new user
 	err = db.createDefaultCategoriesForUser(user.ID)
 	if err != nil {
-		logger.Logger.Warn("Failed to create default categories", "user_id", user.ID, "error", err.Error())
+		db.logger.Warn("Failed to create default categories", "user_id", user.ID, "error", err.Error())
 		// Don't fail user creation if default categories fail
 	} else {
-		logger.Logger.Debug("Default categories created", "user_id", user.ID)
+		db.logger.Debug("Default categories created", "user_id", user.ID)
 	}
 
 	return user, nil
@@ -158,7 +162,7 @@ func (db *DB) AuthenticateUser(username, password string) (*models.User, error) 
 		if err == sql.ErrNoRows {
 			err = errors.New("user not found")
 		}
-		logger.LogDBOperation("authenticate_user", "users", 0, time.Since(start), err)
+		db.logger.LogDBOperation("authenticate_user", "users", 0, time.Since(start), err)
 		return nil, err
 	}
 
@@ -166,11 +170,11 @@ func (db *DB) AuthenticateUser(username, password string) (*models.User, error) 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		err = errors.New("invalid password")
-		logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), err)
+		db.logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), err)
 		return nil, err
 	}
 
-	logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), nil)
+	db.logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), nil)
 
 	// Clear password before returning
 	user.Password = ""

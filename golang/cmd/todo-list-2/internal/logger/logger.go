@@ -8,9 +8,11 @@ import (
 	"time"
 )
 
-var Logger *slog.Logger
+type Logger struct {
+	*slog.Logger
+}
 
-func Init(level string, format string) {
+func Init(level string, format string) *Logger {
 	var logLevel slog.Level
 	switch level {
 	case "debug":
@@ -38,9 +40,27 @@ func Init(level string, format string) {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
-	Logger = slog.New(handler)
-	slog.SetDefault(Logger)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+	return &Logger{logger}
 }
+
+// // Convenience wrappers
+// func Debug(msg string, args ...any) {
+// 	Logger.Debug(msg, args...)
+// }
+
+// func Info(msg string, args ...any) {
+// 	Logger.Info(msg, args...)
+// }
+
+// func Warn(msg string, args ...any) {
+// 	Logger.Warn(msg, args...)
+// }
+
+// func Error(msg string, args ...any) {
+// 	Logger.Error(msg, args...)
+// }
 
 // Context keys for request logging
 type contextKey string
@@ -52,35 +72,34 @@ const (
 )
 
 // WithRequestContext adds request context to logger
-func WithRequestContext(ctx context.Context) *slog.Logger {
-	logger := Logger
-
+func (l *Logger) WithRequestContext(ctx context.Context) *Logger {
+	var tempLogger *slog.Logger
 	if requestID, ok := ctx.Value(RequestIDKey).(string); ok {
-		logger = logger.With("request_id", requestID)
+		tempLogger = l.With("request_id", requestID)
 	}
 
 	if userID, ok := ctx.Value(UserIDKey).(int); ok {
-		logger = logger.With("user_id", userID)
+		tempLogger = l.With("user_id", userID)
 	}
 
 	if username, ok := ctx.Value(UsernameKey).(string); ok {
-		logger = logger.With("username", username)
+		tempLogger = l.With("username", username)
 	}
 
-	return logger
+	return &Logger{tempLogger}
 }
 
 // WithUser adds user context to logger
-func WithUser(userID int, username string) *slog.Logger {
-	return Logger.With(
+func (l *Logger) WithUser(userID int, username string) *Logger {
+	return &Logger{l.With(
 		"user_id", userID,
 		"username", username,
-	)
+	)}
 }
 
 // HTTP request logging helpers
-func LogHTTPRequest(method, path, userAgent, clientIP string, userID int, username string) {
-	Logger.Info("HTTP request",
+func (l *Logger) LogHTTPRequest(method, path, userAgent, clientIP string, userID int, username string) {
+	l.Info("HTTP request",
 		"method", method,
 		"path", path,
 		"user_agent", userAgent,
@@ -90,7 +109,7 @@ func LogHTTPRequest(method, path, userAgent, clientIP string, userID int, userna
 	)
 }
 
-func LogHTTPResponse(method, path string, statusCode int, duration time.Duration, userID int) {
+func (l *Logger) LogHTTPResponse(method, path string, statusCode int, duration time.Duration, userID int) {
 	level := slog.LevelInfo
 	if statusCode >= 400 && statusCode < 500 {
 		level = slog.LevelWarn
@@ -98,7 +117,7 @@ func LogHTTPResponse(method, path string, statusCode int, duration time.Duration
 		level = slog.LevelError
 	}
 
-	Logger.Log(context.Background(), level, "HTTP response",
+	l.Log(context.Background(), level, "HTTP response",
 		"method", method,
 		"path", path,
 		"status_code", statusCode,
@@ -108,9 +127,9 @@ func LogHTTPResponse(method, path string, statusCode int, duration time.Duration
 }
 
 // Database operation logging
-func LogDBOperation(operation, table string, userID int, duration time.Duration, err error) {
+func (l *Logger) LogDBOperation(operation, table string, userID int, duration time.Duration, err error) {
 	if err != nil {
-		Logger.Error("Database operation failed",
+		l.Error("Database operation failed",
 			"operation", operation,
 			"table", table,
 			"user_id", userID,
@@ -118,7 +137,7 @@ func LogDBOperation(operation, table string, userID int, duration time.Duration,
 			"error", err.Error(),
 		)
 	} else {
-		Logger.Debug("Database operation completed",
+		l.Debug("Database operation completed",
 			"operation", operation,
 			"table", table,
 			"user_id", userID,
@@ -128,16 +147,16 @@ func LogDBOperation(operation, table string, userID int, duration time.Duration,
 }
 
 // Authentication logging
-func LogAuthSuccess(username string, userID int, action string) {
-	Logger.Info("Authentication successful",
+func (l *Logger) LogAuthSuccess(username string, userID int, action string) {
+	l.Info("Authentication successful",
 		"action", action,
 		"username", username,
 		"user_id", userID,
 	)
 }
 
-func LogAuthFailure(username string, action string, reason string, clientIP string) {
-	Logger.Warn("Authentication failed",
+func (l *Logger) LogAuthFailure(username string, action string, reason string, clientIP string) {
+	l.Warn("Authentication failed",
 		"action", action,
 		"username", username,
 		"reason", reason,
@@ -146,13 +165,13 @@ func LogAuthFailure(username string, action string, reason string, clientIP stri
 }
 
 // Application lifecycle logging
-func LogStartup(port string) {
-	Logger.Info("Server starting",
+func (l *Logger) LogStartup(port string) {
+	l.Info("Server starting",
 		"port", port,
 		"version", "1.0.0", // You can make this configurable
 	)
 }
 
-func LogShutdown() {
-	Logger.Info("Server shutting down")
+func (l *Logger) LogShutdown() {
+	l.Info("Server shutting down")
 }
