@@ -67,7 +67,7 @@ func main() {
 	r.HandleFunc("/item", handlers.AddItemHandler).Methods("POST")
 	r.HandleFunc("/item/{id:[0-9]+}", handlers.GetItemsHandler).Methods("GET")
 
-	http.HandleFunc("/add-task", handlers.CreateTaskHandler)
+	r.HandleFunc("/add-task", handlers.CreateTaskHandler)
 	r.HandleFunc("/get-tasks", handlers.GetTasksHandler)
 	// http.HandleFunc("/update-task", updateTaskHandler)
 	// http.HandleFunc("/delete-task", deleteTaskHandler)
