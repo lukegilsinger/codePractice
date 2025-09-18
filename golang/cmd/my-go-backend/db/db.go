@@ -22,7 +22,7 @@ func InitDB(databaseFile string) {
 
 	createScripts := []string{
 		"create_tasks",
-		"create_items",
+		"create_items",      // not in ui
 		"create_todo_tasks", // not in use
 		"create_task_history",
 		"create_users",

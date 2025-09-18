@@ -1,0 +1,15 @@
+{
+  "all_apis": [
+    "3787c957-ff20-4d7e-9649-21087404369b", 
+     "3493ce49-382b-4a05-86b9-ae4c38aa99e7"
+  ],
+  "apis": [{
+    "api_name": "accountmanagement:crmaccountstocontacts",
+    "roles": [{
+      "role_name": "IBERIA",
+      "clients_ids": [
+        "18e05118-f730-4c15-9c7c-f152c033734f"
+      ]
+    }]
+  }]
+}

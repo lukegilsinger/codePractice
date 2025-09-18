@@ -15,6 +15,7 @@ import (
 	// pb "my-go-backend/pb"
 )
 
+// defines model
 type Task struct {
 	ID          int    `json:"id"`
 	Title       string `json:"title"`
@@ -60,19 +61,26 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("getting all tasks\n")
-	rows, err := db.GetDB().Query("SELECT id, title, description, status, due_date FROM tasks")
+
+	params := service.GetParams{
+		Table:   "tasks",
+		Columns: []string{"id", "title", "description", "status", "due_date"},
+	}
+
+	rows2, err := service.GetAll(params)
 	if err != nil {
 		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer rows2.Close()
+	fmt.Println(rows2)
 
 	// var taskList pb.TaskList
 	var tasks []Task
-	for rows.Next() {
+	for rows2.Next() {
 		// var task pb.Task
 		var task Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
+		if err := rows2.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate); err != nil {
 			http.Error(w, "Failed to scan task", http.StatusInternalServerError)
 			return
 		}
@@ -80,7 +88,7 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 		tasks = append(tasks, task)
 	}
 
-	fmt.Printf("got all the tasks\n")
+	fmt.Printf("got all the tasks\n%v", tasks)
 
 	// Serialize the response to protobuf
 	// responseData, err := proto.Marshal(&taskList)
@@ -113,7 +121,7 @@ func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 		Columns: []string{"id", "title", "description", "status", "due_date"},
 	}
 
-	res, err := service.Get(params)
+	res, err := service.GetOnId(params)
 
 	var task Task
 	err = res.Item.Scan(&task.ID, &task.Title, &task.Description, &task.Status, &task.DueDate)
