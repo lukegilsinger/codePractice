@@ -1,3 +1,4 @@
+// internal/handlers/todo.go (UPDATED with authentication)
 package handlers
 
 import (
@@ -5,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"todo-list-2/internal/database"
+	"todo-list-2/internal/middleware"
 	"todo-list-2/internal/models"
 
 	"github.com/gorilla/mux"
@@ -19,7 +21,13 @@ func NewTodoHandler(db *database.DB) *TodoHandler {
 }
 
 func (h *TodoHandler) GetAllTodos(w http.ResponseWriter, r *http.Request) {
-	todos, err := h.db.GetAllTodos()
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
+	todos, err := h.db.GetAllTodos(user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -30,6 +38,12 @@ func (h *TodoHandler) GetAllTodos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	var req models.CreateTodoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -41,7 +55,7 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.db.CreateTodo(req)
+	todo, err := h.db.CreateTodo(user.UserID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -53,6 +67,12 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -66,7 +86,7 @@ func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.db.UpdateTodo(id, req)
+	todo, err := h.db.UpdateTodo(user.UserID, id, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -77,6 +97,12 @@ func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -84,7 +110,7 @@ func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.db.DeleteTodo(id)
+	err = h.db.DeleteTodo(user.UserID, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

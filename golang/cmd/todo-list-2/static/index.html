@@ -3,16 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Go Todo App with Categories</title>
+    <title>Go Todo App with Auth</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
-            max-width: 1000px; 
+            max-width: 1200px; 
             margin: 0 auto; 
             padding: 20px; 
             background-color: #f5f5f5;
         }
-        .container { 
+        
+        /* Auth Styles */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ddd;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #666;
+        }
+        .auth-tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        .auth-form {
+            display: none;
+        }
+        .auth-form.active {
+            display: block;
+        }
+        
+        /* Header Styles */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main App Styles */
+        .app-container { 
             display: grid; 
             grid-template-columns: 300px 1fr; 
             gap: 20px; 
@@ -77,19 +147,21 @@
         }
         input, textarea, select { 
             width: 100%; 
-            padding: 8px; 
+            padding: 10px; 
             margin: 5px 0; 
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
         }
         button { 
-            padding: 8px 16px; 
+            padding: 10px 16px; 
             margin: 5px; 
             border: none; 
             border-radius: 4px; 
             cursor: pointer;
             font-size: 14px;
+            transition: background-color 0.2s;
         }
         .btn-primary { background: #007bff; color: white; }
         .btn-primary:hover { background: #0056b3; }
@@ -99,6 +171,8 @@
         .btn-danger:hover { background: #c82333; }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-secondary:hover { background: #545b62; }
+        .btn-outline { background: white; color: #6c757d; border: 1px solid #6c757d; }
+        .btn-outline:hover { background: #6c757d; color: white; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         h1, h2, h3 { color: #333; }
@@ -107,63 +181,146 @@
         .todo-description { color: #666; margin-bottom: 10px; }
         .todo-meta { font-size: 12px; color: #999; }
         .filter-section { margin-bottom: 20px; }
+        .error { color: #dc3545; margin-top: 5px; font-size: 14px; }
+        .success { color: #28a745; margin-top: 5px; font-size: 14px; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        
+        /* Hide app when not authenticated */
+        .app-content {
+            display: none;
+        }
+        .app-content.show {
+            display: block;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            .auth-box {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Go Todo App with Categories</h1>
-    
-    <div class="container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <h3>Categories</h3>
-            <div class="filter-section">
-                <div class="category-item" id="filter-all" onclick="filterByCategory(null)">
-                    <div class="category-color" style="background-color: #666;"></div>
-                    <span>All Categories</span>
+    <!-- Authentication Section -->
+    <div id="auth-section" class="auth-container">
+        <div class="auth-box">
+            <h1 style="text-align: center; margin-bottom: 30px;">Todo App</h1>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required>
                 </div>
-                <div id="category-filters"></div>
-            </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Login</button>
+                <div id="login-error" class="error"></div>
+            </form>
             
-            <h3>Manage Categories</h3>
-            <div class="form-group">
-                <label for="category-name">Category Name</label>
-                <input type="text" id="category-name" placeholder="e.g., Work, Personal">
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" minlength="6" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Register</button>
+                <div id="register-error" class="error"></div>
+                <div id="register-success" class="success"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Main App Section -->
+    <div id="app-section" class="app-content">
+        <!-- Header -->
+        <div class="app-header">
+            <h1>My Todo App</h1>
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <div>
+                    <div id="user-name" style="font-weight: bold;">User</div>
+                    <div style="font-size: 12px; color: #666;">
+                        <span id="user-email">user@example.com</span>
+                    </div>
+                </div>
+                <button class="btn-outline" onclick="logout()">Logout</button>
             </div>
-            <div class="form-group">
-                <label for="category-description">Description</label>
-                <input type="text" id="category-description" placeholder="Optional description">
-            </div>
-            <div class="form-group">
-                <label for="category-color">Color</label>
-                <input type="color" id="category-color" value="#3B82F6">
-            </div>
-            <button class="btn-primary" onclick="addCategory()">Add Category</button>
-            
-            <div id="categories-list" style="margin-top: 20px;"></div>
         </div>
         
-        <!-- Main Content -->
-        <div class="main-content">
-            <div id="add-todo">
-                <h3>Add New Todo</h3>
+        <div class="app-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <h3>Categories</h3>
+                <div class="filter-section">
+                    <div class="category-item" id="filter-all" onclick="filterByCategory(null)">
+                        <div class="category-color" style="background-color: #666;"></div>
+                        <span>All Categories</span>
+                    </div>
+                    <div id="category-filters"></div>
+                </div>
+                
+                <h3>Manage Categories</h3>
                 <div class="form-group">
-                    <label for="todo-title">Title</label>
-                    <input type="text" id="todo-title" placeholder="What needs to be done?" required>
+                    <label for="category-name">Category Name</label>
+                    <input type="text" id="category-name" placeholder="e.g., Work, Personal">
                 </div>
                 <div class="form-group">
-                    <label for="todo-description">Description</label>
-                    <textarea id="todo-description" placeholder="Additional details (optional)" rows="3"></textarea>
+                    <label for="category-description">Description</label>
+                    <input type="text" id="category-description" placeholder="Optional description">
                 </div>
                 <div class="form-group">
-                    <label for="todo-category">Category</label>
-                    <select id="todo-category">
-                        <option value="">No Category</option>
-                    </select>
+                    <label for="category-color">Color</label>
+                    <input type="color" id="category-color" value="#3B82F6">
                 </div>
-                <button class="btn-primary" onclick="addTodo()">Add Todo</button>
+                <button class="btn-primary" onclick="addCategory()">Add Category</button>
+                
+                <div id="categories-list" style="margin-top: 20px;"></div>
             </div>
             
-            <div id="todos"></div>
+            <!-- Main Content -->
+            <div class="main-content">
+                <div id="add-todo">
+                    <h3>Add New Todo</h3>
+                    <div class="form-group">
+                        <label for="todo-title">Title</label>
+                        <input type="text" id="todo-title" placeholder="What needs to be done?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="todo-description">Description</label>
+                        <textarea id="todo-description" placeholder="Additional details (optional)" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="todo-category">Category</label>
+                        <select id="todo-category">
+                            <option value="">No Category</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="addTodo()">Add Todo</button>
+                </div>
+                
+                <div id="todos"></div>
+            </div>
         </div>
     </div>
     

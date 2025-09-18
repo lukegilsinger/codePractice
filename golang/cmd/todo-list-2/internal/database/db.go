@@ -1,11 +1,15 @@
+// internal/database/db.go (COMPLETELY UPDATED with Users)
 package database
 
 import (
 	"database/sql"
+	"errors"
 	"time"
+	"todo-list-2/internal/logger"
 	"todo-list-2/internal/models"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type DB struct {
@@ -23,31 +27,51 @@ func New(dataSourceName string) (*DB, error) {
 }
 
 func (db *DB) createTables() error {
-	// Create categories table first (no dependencies)
+	// Create users table first (other tables depend on it)
+	usersTable := `
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+
+	if _, err := db.conn.Exec(usersTable); err != nil {
+		return err
+	}
+
+	// Create categories table with user_id foreign key
 	categoriesTable := `
     CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
         description TEXT,
         color TEXT DEFAULT '#3B82F6',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE(user_id, name)
     )`
 
 	if _, err := db.conn.Exec(categoriesTable); err != nil {
 		return err
 	}
 
-	// Create todos table with foreign key to categories
+	// Create todos table with user_id foreign key
 	todosTable := `
     CREATE TABLE IF NOT EXISTS todos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         description TEXT,
         completed BOOLEAN DEFAULT FALSE,
         category_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
     )`
 
@@ -55,23 +79,117 @@ func (db *DB) createTables() error {
 		return err
 	}
 
-	// Insert default categories if table is empty
-	return db.insertDefaultCategories()
+	return nil
 }
 
-func (db *DB) insertDefaultCategories() error {
-	// Check if we have any categories
-	var count int
-	err := db.conn.QueryRow("SELECT COUNT(*) FROM categories").Scan(&count)
+func (db *DB) Close() error {
+	return db.conn.Close()
+}
+
+// ===================================================================
+// USER CRUD OPERATIONS
+// ===================================================================
+
+// Update the CreateUser method with logging:
+func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
+	start := time.Now()
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		logger.LogDBOperation("hash_password", "users", 0, time.Since(start), err)
+		return nil, err
 	}
 
+	// Check if username already exists
+	var count int
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", req.Username).Scan(&count)
+	if err != nil {
+		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
+		return nil, err
+	}
 	if count > 0 {
-		return nil // Categories already exist
+		err := errors.New("username already exists")
+		logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
+		return nil, err
 	}
 
-	// Insert default categories
+	// Insert user
+	query := `
+    INSERT INTO users (username, email, password, created_at, updated_at) 
+    VALUES (?, ?, ?, ?, ?) 
+    RETURNING id, username, email, created_at, updated_at`
+
+	now := time.Now()
+	row := db.conn.QueryRow(query, req.Username, req.Email, string(hashedPassword), now, now)
+
+	user := &models.User{}
+	err = row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		logger.LogDBOperation("create_user", "users", 0, time.Since(start), err)
+		return nil, err
+	}
+
+	logger.LogDBOperation("create_user", "users", user.ID, time.Since(start), nil)
+	logger.Logger.Info("New user created", "user_id", user.ID, "username", user.Username)
+
+	// Create default categories for new user
+	err = db.createDefaultCategoriesForUser(user.ID)
+	if err != nil {
+		logger.Logger.Warn("Failed to create default categories", "user_id", user.ID, "error", err.Error())
+		// Don't fail user creation if default categories fail
+	} else {
+		logger.Logger.Debug("Default categories created", "user_id", user.ID)
+	}
+
+	return user, nil
+}
+
+// Update AuthenticateUser method:
+func (db *DB) AuthenticateUser(username, password string) (*models.User, error) {
+	start := time.Now()
+
+	query := `SELECT id, username, email, password, created_at, updated_at FROM users WHERE username = ?`
+
+	user := &models.User{}
+	row := db.conn.QueryRow(query, username)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.New("user not found")
+		}
+		logger.LogDBOperation("authenticate_user", "users", 0, time.Since(start), err)
+		return nil, err
+	}
+
+	// Check password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		err = errors.New("invalid password")
+		logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), err)
+		return nil, err
+	}
+
+	logger.LogDBOperation("authenticate_user", "users", user.ID, time.Since(start), nil)
+
+	// Clear password before returning
+	user.Password = ""
+	return user, nil
+}
+
+func (db *DB) GetUserByID(id int) (*models.User, error) {
+	query := `SELECT id, username, email, created_at, updated_at FROM users WHERE id = ?`
+
+	user := &models.User{}
+	row := db.conn.QueryRow(query, id)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (db *DB) createDefaultCategoriesForUser(userID int) error {
 	defaults := []struct {
 		name, description, color string
 	}{
@@ -82,9 +200,10 @@ func (db *DB) insertDefaultCategories() error {
 	}
 
 	for _, cat := range defaults {
-		_, err = db.conn.Exec(
-			"INSERT INTO categories (name, description, color) VALUES (?, ?, ?)",
-			cat.name, cat.description, cat.color,
+		now := time.Now()
+		_, err := db.conn.Exec(
+			"INSERT INTO categories (user_id, name, description, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+			userID, cat.name, cat.description, cat.color, now, now,
 		)
 		if err != nil {
 			return err
@@ -94,34 +213,33 @@ func (db *DB) insertDefaultCategories() error {
 	return nil
 }
 
-func (db *DB) Close() error {
-	return db.conn.Close()
-}
+// ===================================================================
+// CATEGORY CRUD OPERATIONS (UPDATED with user filtering)
+// ===================================================================
 
-// CATEGORY CRUD OPERATIONS
-func (db *DB) CreateCategory(req models.CreateCategoryRequest) (*models.Category, error) {
+func (db *DB) CreateCategory(userID int, req models.CreateCategoryRequest) (*models.Category, error) {
 	query := `
-    INSERT INTO categories (name, description, color, created_at, updated_at) 
-    VALUES (?, ?, ?, ?, ?) 
-    RETURNING id, name, description, color, created_at, updated_at`
+    INSERT INTO categories (user_id, name, description, color, created_at, updated_at) 
+    VALUES (?, ?, ?, ?, ?, ?) 
+    RETURNING id, user_id, name, description, color, created_at, updated_at`
 
 	now := time.Now()
 	color := req.Color
 	if color == "" {
-		color = "#3B82F6" // default blue
+		color = "#3B82F6"
 	}
 
-	row := db.conn.QueryRow(query, req.Name, req.Description, color, now, now)
+	row := db.conn.QueryRow(query, userID, req.Name, req.Description, color, now, now)
 
 	category := &models.Category{}
-	err := row.Scan(&category.ID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
+	err := row.Scan(&category.ID, &category.UserID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
 	return category, err
 }
 
-func (db *DB) GetAllCategories() ([]models.Category, error) {
-	query := `SELECT id, name, description, color, created_at, updated_at FROM categories ORDER BY name`
+func (db *DB) GetAllCategories(userID int) ([]models.Category, error) {
+	query := `SELECT id, user_id, name, description, color, created_at, updated_at FROM categories WHERE user_id = ? ORDER BY name`
 
-	rows, err := db.conn.Query(query)
+	rows, err := db.conn.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +248,7 @@ func (db *DB) GetAllCategories() ([]models.Category, error) {
 	var categories []models.Category
 	for rows.Next() {
 		var category models.Category
-		err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
+		err := rows.Scan(&category.ID, &category.UserID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -139,20 +257,20 @@ func (db *DB) GetAllCategories() ([]models.Category, error) {
 	return categories, nil
 }
 
-func (db *DB) GetCategoryByID(id int) (*models.Category, error) {
-	query := `SELECT id, name, description, color, created_at, updated_at FROM categories WHERE id = ?`
+func (db *DB) GetCategoryByID(userID, id int) (*models.Category, error) {
+	query := `SELECT id, user_id, name, description, color, created_at, updated_at FROM categories WHERE id = ? AND user_id = ?`
 
 	category := &models.Category{}
-	row := db.conn.QueryRow(query, id)
-	err := row.Scan(&category.ID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
+	row := db.conn.QueryRow(query, id, userID)
+	err := row.Scan(&category.ID, &category.UserID, &category.Name, &category.Description, &category.Color, &category.CreatedAt, &category.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return category, nil
 }
 
-func (db *DB) UpdateCategory(id int, req models.UpdateCategoryRequest) (*models.Category, error) {
-	current, err := db.GetCategoryByID(id)
+func (db *DB) UpdateCategory(userID, id int, req models.UpdateCategoryRequest) (*models.Category, error) {
+	current, err := db.GetCategoryByID(userID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +286,8 @@ func (db *DB) UpdateCategory(id int, req models.UpdateCategoryRequest) (*models.
 	}
 	current.UpdatedAt = time.Now()
 
-	query := `UPDATE categories SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ?`
-	_, err = db.conn.Exec(query, current.Name, current.Description, current.Color, current.UpdatedAt, id)
+	query := `UPDATE categories SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ? AND user_id = ?`
+	_, err = db.conn.Exec(query, current.Name, current.Description, current.Color, current.UpdatedAt, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -177,31 +295,42 @@ func (db *DB) UpdateCategory(id int, req models.UpdateCategoryRequest) (*models.
 	return current, nil
 }
 
-func (db *DB) DeleteCategory(id int) error {
-	query := `DELETE FROM categories WHERE id = ?`
-	_, err := db.conn.Exec(query, id)
+func (db *DB) DeleteCategory(userID, id int) error {
+	query := `DELETE FROM categories WHERE id = ? AND user_id = ?`
+	_, err := db.conn.Exec(query, id, userID)
 	return err
 }
 
-// UPDATED TODO CRUD OPERATIONS
-func (db *DB) CreateTodo(req models.CreateTodoRequest) (*models.Todo, error) {
+// ===================================================================
+// TODO CRUD OPERATIONS (UPDATED with user filtering)
+// ===================================================================
+
+func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo, error) {
+	// Verify category belongs to user if category_id is provided
+	if req.CategoryID != nil {
+		_, err := db.GetCategoryByID(userID, *req.CategoryID)
+		if err != nil {
+			return nil, errors.New("category not found or doesn't belong to user")
+		}
+	}
+
 	query := `
-    INSERT INTO todos (title, description, category_id, created_at, updated_at) 
-    VALUES (?, ?, ?, ?, ?) 
-    RETURNING id, title, description, completed, category_id, created_at, updated_at`
+    INSERT INTO todos (user_id, title, description, category_id, created_at, updated_at) 
+    VALUES (?, ?, ?, ?, ?, ?) 
+    RETURNING id, user_id, title, description, completed, category_id, created_at, updated_at`
 
 	now := time.Now()
-	row := db.conn.QueryRow(query, req.Title, req.Description, req.CategoryID, now, now)
+	row := db.conn.QueryRow(query, userID, req.Title, req.Description, req.CategoryID, now, now)
 
 	todo := &models.Todo{}
-	err := row.Scan(&todo.ID, &todo.Title, &todo.Description, &todo.Completed, &todo.CategoryID, &todo.CreatedAt, &todo.UpdatedAt)
+	err := row.Scan(&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &todo.CategoryID, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load category info if present
 	if todo.CategoryID != nil {
-		category, err := db.GetCategoryByID(*todo.CategoryID)
+		category, err := db.GetCategoryByID(userID, *todo.CategoryID)
 		if err == nil {
 			todo.Category = category
 		}
@@ -210,16 +339,17 @@ func (db *DB) CreateTodo(req models.CreateTodoRequest) (*models.Todo, error) {
 	return todo, nil
 }
 
-func (db *DB) GetAllTodos() ([]models.Todo, error) {
+func (db *DB) GetAllTodos(userID int) ([]models.Todo, error) {
 	query := `
     SELECT 
-        t.id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
-        c.id, c.name, c.description, c.color, c.created_at, c.updated_at
+        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
+        c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
     FROM todos t 
     LEFT JOIN categories c ON t.category_id = c.id 
+    WHERE t.user_id = ?
     ORDER BY t.created_at DESC`
 
-	rows, err := db.conn.Query(query)
+	rows, err := db.conn.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,13 +358,13 @@ func (db *DB) GetAllTodos() ([]models.Todo, error) {
 	var todos []models.Todo
 	for rows.Next() {
 		var todo models.Todo
-		var categoryID, catID sql.NullInt64
+		var categoryID, catID, catUserID sql.NullInt64
 		var catName, catDesc, catColor sql.NullString
 		var catCreated, catUpdated sql.NullTime
 
 		err := rows.Scan(
-			&todo.ID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
-			&catID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
+			&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
+			&catID, &catUserID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
 		)
 		if err != nil {
 			return nil, err
@@ -245,10 +375,10 @@ func (db *DB) GetAllTodos() ([]models.Todo, error) {
 			todo.CategoryID = &id
 		}
 
-		// Populate category if it exists
 		if catID.Valid {
 			todo.Category = &models.Category{
 				ID:          int(catID.Int64),
+				UserID:      int(catUserID.Int64),
 				Name:        catName.String,
 				Description: catDesc.String,
 				Color:       catColor.String,
@@ -262,24 +392,24 @@ func (db *DB) GetAllTodos() ([]models.Todo, error) {
 	return todos, nil
 }
 
-func (db *DB) GetTodoByID(id int) (*models.Todo, error) {
+func (db *DB) GetTodoByID(userID, id int) (*models.Todo, error) {
 	query := `
     SELECT 
-        t.id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
-        c.id, c.name, c.description, c.color, c.created_at, c.updated_at
+        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
+        c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
     FROM todos t 
     LEFT JOIN categories c ON t.category_id = c.id 
-    WHERE t.id = ?`
+    WHERE t.id = ? AND t.user_id = ?`
 
 	todo := &models.Todo{}
-	var categoryID, catID sql.NullInt64
+	var categoryID, catID, catUserID sql.NullInt64
 	var catName, catDesc, catColor sql.NullString
 	var catCreated, catUpdated sql.NullTime
 
-	row := db.conn.QueryRow(query, id)
+	row := db.conn.QueryRow(query, id, userID)
 	err := row.Scan(
-		&todo.ID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
-		&catID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
+		&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
+		&catID, &catUserID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
 	)
 	if err != nil {
 		return nil, err
@@ -293,6 +423,7 @@ func (db *DB) GetTodoByID(id int) (*models.Todo, error) {
 	if catID.Valid {
 		todo.Category = &models.Category{
 			ID:          int(catID.Int64),
+			UserID:      int(catUserID.Int64),
 			Name:        catName.String,
 			Description: catDesc.String,
 			Color:       catColor.String,
@@ -304,8 +435,8 @@ func (db *DB) GetTodoByID(id int) (*models.Todo, error) {
 	return todo, nil
 }
 
-func (db *DB) UpdateTodo(id int, req models.UpdateTodoRequest) (*models.Todo, error) {
-	current, err := db.GetTodoByID(id)
+func (db *DB) UpdateTodo(userID, id int, req models.UpdateTodoRequest) (*models.Todo, error) {
+	current, err := db.GetTodoByID(userID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -320,21 +451,28 @@ func (db *DB) UpdateTodo(id int, req models.UpdateTodoRequest) (*models.Todo, er
 		current.Completed = *req.Completed
 	}
 	if req.CategoryID != nil {
+		// Verify category belongs to user if not nil
+		if *req.CategoryID != 0 {
+			_, err := db.GetCategoryByID(userID, *req.CategoryID)
+			if err != nil {
+				return nil, errors.New("category not found or doesn't belong to user")
+			}
+		}
 		current.CategoryID = req.CategoryID
 	}
 	current.UpdatedAt = time.Now()
 
-	query := `UPDATE todos SET title = ?, description = ?, completed = ?, category_id = ?, updated_at = ? WHERE id = ?`
-	_, err = db.conn.Exec(query, current.Title, current.Description, current.Completed, current.CategoryID, current.UpdatedAt, id)
+	query := `UPDATE todos SET title = ?, description = ?, completed = ?, category_id = ?, updated_at = ? WHERE id = ? AND user_id = ?`
+	_, err = db.conn.Exec(query, current.Title, current.Description, current.Completed, current.CategoryID, current.UpdatedAt, id, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return db.GetTodoByID(id) // Return with populated category
+	return db.GetTodoByID(userID, id)
 }
 
-func (db *DB) DeleteTodo(id int) error {
-	query := `DELETE FROM todos WHERE id = ?`
-	_, err := db.conn.Exec(query, id)
+func (db *DB) DeleteTodo(userID, id int) error {
+	query := `DELETE FROM todos WHERE id = ? AND user_id = ?`
+	_, err := db.conn.Exec(query, id, userID)
 	return err
 }
