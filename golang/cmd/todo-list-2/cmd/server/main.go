@@ -20,16 +20,25 @@ func main() {
 
 	// Initialize handlers
 	todoHandler := handlers.NewTodoHandler(db)
+	categoryHandler := handlers.NewCategoryHandler(db) // NEW
 
 	// Setup routes
 	r := mux.NewRouter()
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
+
+	// Todo routes
 	api.HandleFunc("/todos", todoHandler.GetAllTodos).Methods("GET")
 	api.HandleFunc("/todos", todoHandler.CreateTodo).Methods("POST")
 	api.HandleFunc("/todos/{id}", todoHandler.UpdateTodo).Methods("PUT")
 	api.HandleFunc("/todos/{id}", todoHandler.DeleteTodo).Methods("DELETE")
+
+	// Category routes (NEW)
+	api.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
+	api.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
+	api.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
+	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
 	// Serve static files
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
