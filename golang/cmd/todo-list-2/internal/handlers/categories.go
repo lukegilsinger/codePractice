@@ -1,3 +1,6 @@
+// ===================================================================
+// internal/handlers/category.go (UPDATED with authentication)
+// ===================================================================
 package handlers
 
 import (
@@ -5,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"todo-list-2/internal/database"
+	"todo-list-2/internal/middleware"
 	"todo-list-2/internal/models"
 
 	"github.com/gorilla/mux"
@@ -19,7 +23,13 @@ func NewCategoryHandler(db *database.DB) *CategoryHandler {
 }
 
 func (h *CategoryHandler) GetAllCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.db.GetAllCategories()
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
+	categories, err := h.db.GetAllCategories(user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -30,6 +40,12 @@ func (h *CategoryHandler) GetAllCategories(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	var req models.CreateCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -41,7 +57,7 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	category, err := h.db.CreateCategory(req)
+	category, err := h.db.CreateCategory(user.UserID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -53,6 +69,12 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -66,7 +88,7 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	category, err := h.db.UpdateCategory(id, req)
+	category, err := h.db.UpdateCategory(user.UserID, id, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -77,6 +99,12 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUserFromContext(r)
+	if user == nil {
+		http.Error(w, "User not found in context", http.StatusInternalServerError)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -84,7 +112,7 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = h.db.DeleteCategory(id)
+	err = h.db.DeleteCategory(user.UserID, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

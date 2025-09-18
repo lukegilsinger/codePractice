@@ -1,3 +1,4 @@
+// cmd/server/main.go (UPDATED with authentication)
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 	"net/http"
 	"todo-list-2/internal/database"
 	"todo-list-2/internal/handlers"
+	"todo-list-2/internal/middleware"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -20,7 +22,8 @@ func main() {
 
 	// Initialize handlers
 	todoHandler := handlers.NewTodoHandler(db)
-	categoryHandler := handlers.NewCategoryHandler(db) // NEW
+	categoryHandler := handlers.NewCategoryHandler(db)
+	authHandler := handlers.NewAuthHandler(db) // NEW
 
 	// Setup routes
 	r := mux.NewRouter()
@@ -28,17 +31,28 @@ func main() {
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 
-	// Todo routes
-	api.HandleFunc("/todos", todoHandler.GetAllTodos).Methods("GET")
-	api.HandleFunc("/todos", todoHandler.CreateTodo).Methods("POST")
-	api.HandleFunc("/todos/{id}", todoHandler.UpdateTodo).Methods("PUT")
-	api.HandleFunc("/todos/{id}", todoHandler.DeleteTodo).Methods("DELETE")
+	// Public auth routes (no authentication required)
+	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST")
+	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
 
-	// Category routes (NEW)
-	api.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
-	api.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
-	api.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
-	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
+	// Protected routes (require authentication)
+	protected := api.PathPrefix("").Subrouter()
+	protected.Use(middleware.AuthMiddleware)
+
+	// User info route
+	protected.HandleFunc("/auth/me", authHandler.Me).Methods("GET")
+
+	// Todo routes (all protected)
+	protected.HandleFunc("/todos", todoHandler.GetAllTodos).Methods("GET")
+	protected.HandleFunc("/todos", todoHandler.CreateTodo).Methods("POST")
+	protected.HandleFunc("/todos/{id}", todoHandler.UpdateTodo).Methods("PUT")
+	protected.HandleFunc("/todos/{id}", todoHandler.DeleteTodo).Methods("DELETE")
+
+	// Category routes (all protected)
+	protected.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
+	protected.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
+	protected.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
+	protected.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
 	// Serve static files
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
