@@ -18,6 +18,7 @@ type DB struct {
 }
 
 func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
+	logger.Info("Creating Database from source", "dataSourceName", dataSourceName)
 	conn, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		return nil, err
