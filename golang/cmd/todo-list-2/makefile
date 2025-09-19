@@ -1,8 +1,8 @@
 .PHONY: start run build docker clean
 
 # Define variables
-APP_NAME=my-go-backend
-DOCKER_IMAGE=my-go-backend
+APP_NAME=todo-list-v2
+DOCKER_IMAGE=todo-list-v2
 DOCKER_PORT=8080
 
 # Server
@@ -47,10 +47,27 @@ deps:
 	go mod tidy
 	go mod download
 
-# Run tests
+# Testing commands
 test:
 	go test ./...
 
+test-verbose:
+	go test -v ./...
+
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+test-integration:
+	go test -v -tags=integration ./...
+
+test-unit:
+	go test -v -short ./...
+
+test-watch:
+	@echo "Watching for changes... (requires 'entr' - install with: brew install entr)"
+	find . -name "*.go" | entr -c make test
 
 # Database migrations
 migrate-up:
