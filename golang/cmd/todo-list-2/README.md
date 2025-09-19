@@ -19,10 +19,11 @@
 - [ ] testing
 - [ ] drag and drop
 - [x] docker
-- [ ] database migrations
-- [ ] ci/cd
-- [ ] 
-- [ ] 
+- [x] database migrations
+- [ ] postgres
+- [ ] ci/cd - github actions
+- [ ] deploy
+- [ ] file attachments
 - [ ] 
 - [ ] 
 - [ ] 

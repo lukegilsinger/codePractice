@@ -50,3 +50,18 @@ deps:
 # Run tests
 test:
 	go test ./...
+
+
+# Database migrations
+migrate-up:
+	go run cmd/migrate/main.go up
+
+migrate-down:
+	go run cmd/migrate/main.go down
+
+migrate-status:
+	go run cmd/migrate/main.go status
+
+# Rollback multiple migrations
+migrate-rollback:
+	go run cmd/migrate/main.go down 2

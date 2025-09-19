@@ -4,8 +4,10 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 	"todo-list-2/internal/logger"
+	"todo-list-2/internal/migrations"
 	"todo-list-2/internal/models"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -28,63 +30,13 @@ func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
 		conn:   conn,
 		logger: logger,
 	}
-	return db, db.createTables()
-}
-
-func (db *DB) createTables() error {
-	// Create users table first (other tables depend on it)
-	usersTable := `
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`
-
-	if _, err := db.conn.Exec(usersTable); err != nil {
-		return err
+	// Run migrations instead of createTables
+	migrator := migrations.NewMigrator(conn, logger)
+	if err := migrator.MigrateUp(); err != nil {
+		return nil, fmt.Errorf("migration failed: %w", err)
 	}
 
-	// Create categories table with user_id foreign key
-	categoriesTable := `
-    CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        color TEXT DEFAULT '#3B82F6',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-        UNIQUE(user_id, name)
-    )`
-
-	if _, err := db.conn.Exec(categoriesTable); err != nil {
-		return err
-	}
-
-	// Create todos table with user_id foreign key
-	todosTable := `
-    CREATE TABLE IF NOT EXISTS todos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        completed BOOLEAN DEFAULT FALSE,
-        category_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-        FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
-    )`
-
-	if _, err := db.conn.Exec(todosTable); err != nil {
-		return err
-	}
-
-	return nil
+	return db, nil
 }
 
 func (db *DB) Close() error {
