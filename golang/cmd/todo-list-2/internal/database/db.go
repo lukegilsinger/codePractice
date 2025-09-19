@@ -39,6 +39,10 @@ func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
 	return db, nil
 }
 
+func NewFromConnection(conn *sql.DB, logger *logger.Logger) *DB {
+	return &DB{conn, logger}
+}
+
 func (db *DB) Close() error {
 	return db.conn.Close()
 }

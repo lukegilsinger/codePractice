@@ -9,15 +9,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"todo-list-2/internal/database"
+	"todo-list-2/internal/logger"
 	"todo-list-2/internal/models"
 	"todo-list-2/internal/testutil"
 )
 
 func TestAuthHandler_Register(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	defer db.Close()
+	// Initialize logger
+	logger := logger.Init("info", "text")
+	logger.LogStartup("8080")
 
-	handler := NewAuthHandler(db)
+	testDB := testutil.SetupTestDB(t)
+	defer testDB.Conn.Close()
+
+	db := database.NewFromConnection(testDB.Conn, logger)
+	handler := NewAuthHandler(db, logger)
 
 	tests := []struct {
 		name           string
@@ -86,13 +94,21 @@ func TestAuthHandler_Register(t *testing.T) {
 }
 
 func TestAuthHandler_Login(t *testing.T) {
-	db := testutil.SetupTestDB(t)
-	defer db.Close()
+
+	// Initialize logger
+	logger := logger.Init("info", "text")
+	logger.LogStartup("8080")
+
+	testDB := testutil.SetupTestDB(t)
+	defer testDB.Conn.Close()
+
+	// Create database.DB wrapper
+	db := database.NewFromConnection(testDB.Conn, logger)
 
 	// Create a test user
-	testUser := testutil.CreateTestUser(t, db)
+	testUser := testutil.CreateTestUser(t, testDB)
 
-	handler := NewAuthHandler(db)
+	handler := NewAuthHandler(db, logger)
 
 	tests := []struct {
 		name           string

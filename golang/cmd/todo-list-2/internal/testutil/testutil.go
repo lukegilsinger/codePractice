@@ -3,20 +3,25 @@ package testutil
 
 import (
 	"database/sql"
-	"go-todo-app/internal/migrations"
-	"go-todo-app/internal/models"
 	"testing"
+	"todo-list-2/internal/logger"
+	"todo-list-2/internal/migrations"
+	"todo-list-2/internal/models"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // TestDB wraps sql.DB for testing (avoiding import cycle)
 type TestDB struct {
-	*sql.DB
+	Conn   *sql.DB
+	logger *logger.Logger
 }
 
 // SetupTestDB creates an in-memory SQLite database for testing
 func SetupTestDB(t *testing.T) *TestDB {
+	// Initialize logger
+	logger := logger.Init("info", "text")
+	logger.LogStartup("8080")
 	// Use in-memory SQLite database
 	conn, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
@@ -24,12 +29,12 @@ func SetupTestDB(t *testing.T) *TestDB {
 	}
 
 	// Run migrations to set up schema
-	migrator := migrations.NewMigrator(conn)
+	migrator := migrations.NewMigrator(conn, logger)
 	if err := migrator.MigrateUp(); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	return &TestDB{conn}
+	return &TestDB{conn, logger}
 }
 
 // CreateTestUser creates a test user and returns it
@@ -41,7 +46,7 @@ func CreateTestUser(t *testing.T, db *TestDB) *models.User {
     INSERT INTO users (username, email, password, created_at, updated_at) 
     VALUES (?, ?, ?, datetime('now'), datetime('now'))`
 
-	result, err := db.Exec(query, "testuser", "test@example.com", hashedPassword)
+	result, err := db.Conn.Exec(query, "testuser", "test@example.com", hashedPassword)
 	if err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
@@ -61,7 +66,7 @@ func CreateTestCategory(t *testing.T, db *TestDB, userID int) *models.Category {
     INSERT INTO categories (user_id, name, description, color, created_at, updated_at)
     VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
 
-	result, err := db.Exec(query, userID, "Test Category", "A test category", "#FF0000")
+	result, err := db.Conn.Exec(query, userID, "Test Category", "A test category", "#FF0000")
 	if err != nil {
 		t.Fatalf("Failed to create test category: %v", err)
 	}
@@ -83,7 +88,7 @@ func CreateTestTodo(t *testing.T, db *TestDB, userID int, categoryID *int) *mode
     INSERT INTO todos (user_id, title, description, category_id, created_at, updated_at)
     VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
 
-	result, err := db.Exec(query, userID, "Test Todo", "A test todo", categoryID)
+	result, err := db.Conn.Exec(query, userID, "Test Todo", "A test todo", categoryID)
 	if err != nil {
 		t.Fatalf("Failed to create test todo: %v", err)
 	}

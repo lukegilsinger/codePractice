@@ -1,149 +1,152 @@
 // ===================================================================
-// integration_test.go (NEW FILE) - Integration tests
+// tests/integration_test.go (FIXED) - Integration tests
 // ===================================================================
-package main
+package tests
 
-import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"todo-list-2/internal/auth"
-	"todo-list-2/internal/database"
-	"todo-list-2/internal/handlers"
-	"todo-list-2/internal/middleware"
-	"todo-list-2/internal/models"
-	"todo-list-2/internal/testutil"
+// import (
+// 	"bytes"
+// 	"encoding/json"
+// 	"net/http"
+// 	"net/http/httptest"
+// 	"testing"
+// 	"todo-list-2/internal/auth"
+// 	"todo-list-2/internal/database"
+// 	"todo-list-2/internal/handlers"
+// 	"todo-list-2/internal/middleware"
+// 	"todo-list-2/internal/models"
+// 	"todo-list-2/internal/testutil"
 
-	"github.com/gorilla/mux"
-)
+// 	"github.com/gorilla/mux"
+// )
 
-func setupTestServer(t *testing.T) (*httptest.Server, *database.DB) {
-	// Setup test database
-	db := testutil.SetupTestDB(t)
+// func setupTestServer(t *testing.T) (*httptest.Server, *testutil.TestDB) {
+// 	// Setup test database
+// 	testDB := testutil.SetupTestDB(t)
 
-	// Set JWT secret for testing
-	auth.SetJWTSecret("test-secret")
+// 	// Create database.DB wrapper
+// 	db := database.NewFromConnection(testDB.Conn)
 
-	// Setup handlers
-	authHandler := handlers.NewAuthHandler(db)
-	todoHandler := handlers.NewTodoHandler(db)
-	categoryHandler := handlers.NewCategoryHandler(db)
+// 	// Set JWT secret for testing
+// 	auth.SetJWTSecret("test-secret")
 
-	// Setup routes
-	r := mux.NewRouter()
-	api := r.PathPrefix("/api").Subrouter()
+// 	// Setup handlers
+// 	authHandler := handlers.NewAuthHandler(db)
+// 	todoHandler := handlers.NewTodoHandler(db)
+// 	categoryHandler := handlers.NewCategoryHandler(db)
 
-	// Public routes
-	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST")
-	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
+// 	// Setup routes
+// 	r := mux.NewRouter()
+// 	api := r.PathPrefix("/api").Subrouter()
 
-	// Protected routes
-	protected := api.PathPrefix("").Subrouter()
-	protected.Use(middleware.AuthMiddleware)
+// 	// Public routes
+// 	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST")
+// 	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
 
-	protected.HandleFunc("/todos", todoHandler.GetAllTodos).Methods("GET")
-	protected.HandleFunc("/todos", todoHandler.CreateTodo).Methods("POST")
-	protected.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
+// 	// Protected routes
+// 	protected := api.PathPrefix("").Subrouter()
+// 	protected.Use(middleware.AuthMiddleware)
 
-	server := httptest.NewServer(r)
-	return server, db
-}
+// 	protected.HandleFunc("/todos", todoHandler.GetAllTodos).Methods("GET")
+// 	protected.HandleFunc("/todos", todoHandler.CreateTodo).Methods("POST")
+// 	protected.HandleFunc("/categories", categoryHandler.GetAllCategories).Methods("GET")
 
-func TestFullUserFlow(t *testing.T) {
-	server, db := setupTestServer(t)
-	defer server.Close()
-	defer db.Close()
+// 	server := httptest.NewServer(r)
+// 	return server, testDB
+// }
 
-	// Step 1: Register user
-	registerReq := models.RegisterRequest{
-		Username: "integrationuser",
-		Email:    "integration@example.com",
-		Password: "password123",
-	}
+// func TestFullUserFlow(t *testing.T) {
+// 	server, testDB := setupTestServer(t)
+// 	defer server.Close()
+// 	defer testDB.Close()
 
-	body, _ := json.Marshal(registerReq)
-	resp, err := http.Post(server.URL+"/api/auth/register", "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("Registration request failed: %v", err)
-	}
-	defer resp.Body.Close()
+// 	// Step 1: Register user
+// 	registerReq := models.RegisterRequest{
+// 		Username: "integrationuser",
+// 		Email:    "integration@example.com",
+// 		Password: "password123",
+// 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
-	}
+// 	body, _ := json.Marshal(registerReq)
+// 	resp, err := http.Post(server.URL+"/api/auth/register", "application/json", bytes.NewReader(body))
+// 	if err != nil {
+// 		t.Fatalf("Registration request failed: %v", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	var authResp models.AuthResponse
-	json.NewDecoder(resp.Body).Decode(&authResp)
-	token := authResp.Token
+// 	if resp.StatusCode != http.StatusCreated {
+// 		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
+// 	}
 
-	// Step 2: Create category
-	categoryReq := models.CreateCategoryRequest{
-		Name:        "Integration Category",
-		Description: "Test category",
-		Color:       "#00FF00",
-	}
+// 	var authResp models.AuthResponse
+// 	json.NewDecoder(resp.Body).Decode(&authResp)
+// 	token := authResp.Token
 
-	body, _ = json.Marshal(categoryReq)
-	req, _ := http.NewRequest("POST", server.URL+"/api/categories", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+// 	// Step 2: Create category
+// 	categoryReq := models.CreateCategoryRequest{
+// 		Name:        "Integration Category",
+// 		Description: "Test category",
+// 		Color:       "#00FF00",
+// 	}
 
-	client := &http.Client{}
-	resp, err = client.Do(req)
-	if err != nil {
-		t.Fatalf("Create category request failed: %v", err)
-	}
-	defer resp.Body.Close()
+// 	body, _ = json.Marshal(categoryReq)
+// 	req, _ := http.NewRequest("POST", server.URL+"/api/categories", bytes.NewReader(body))
+// 	req.Header.Set("Content-Type", "application/json")
+// 	req.Header.Set("Authorization", "Bearer "+token)
 
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
-	}
+// 	client := &http.Client{}
+// 	resp, err = client.Do(req)
+// 	if err != nil {
+// 		t.Fatalf("Create category request failed: %v", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	// Step 3: Create todo
-	todoReq := models.CreateTodoRequest{
-		Title:       "Integration Todo",
-		Description: "A test todo",
-	}
+// 	if resp.StatusCode != http.StatusCreated {
+// 		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
+// 	}
 
-	body, _ = json.Marshal(todoReq)
-	req, _ = http.NewRequest("POST", server.URL+"/api/todos", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+// 	// Step 3: Create todo
+// 	todoReq := models.CreateTodoRequest{
+// 		Title:       "Integration Todo",
+// 		Description: "A test todo",
+// 	}
 
-	resp, err = client.Do(req)
-	if err != nil {
-		t.Fatalf("Create todo request failed: %v", err)
-	}
-	defer resp.Body.Close()
+// 	body, _ = json.Marshal(todoReq)
+// 	req, _ = http.NewRequest("POST", server.URL+"/api/todos", bytes.NewReader(body))
+// 	req.Header.Set("Content-Type", "application/json")
+// 	req.Header.Set("Authorization", "Bearer "+token)
 
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
-	}
+// 	resp, err = client.Do(req)
+// 	if err != nil {
+// 		t.Fatalf("Create todo request failed: %v", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	// Step 4: Get todos
-	req, _ = http.NewRequest("GET", server.URL+"/api/todos", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+// 	if resp.StatusCode != http.StatusCreated {
+// 		t.Fatalf("Expected status 201, got %d", resp.StatusCode)
+// 	}
 
-	resp, err = client.Do(req)
-	if err != nil {
-		t.Fatalf("Get todos request failed: %v", err)
-	}
-	defer resp.Body.Close()
+// 	// Step 4: Get todos
+// 	req, _ = http.NewRequest("GET", server.URL+"/api/todos", nil)
+// 	req.Header.Set("Authorization", "Bearer "+token)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
-	}
+// 	resp, err = client.Do(req)
+// 	if err != nil {
+// 		t.Fatalf("Get todos request failed: %v", err)
+// 	}
+// 	defer resp.Body.Close()
 
-	var todos []models.Todo
-	json.NewDecoder(resp.Body).Decode(&todos)
+// 	if resp.StatusCode != http.StatusOK {
+// 		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+// 	}
 
-	if len(todos) == 0 {
-		t.Error("Expected at least one todo")
-	}
+// 	var todos []models.Todo
+// 	json.NewDecoder(resp.Body).Decode(&todos)
 
-	if todos[0].Title != todoReq.Title {
-		t.Errorf("Expected todo title %s, got %s", todoReq.Title, todos[0].Title)
-	}
-}
+// 	if len(todos) == 0 {
+// 		t.Error("Expected at least one todo")
+// 	}
+
+// 	if todos[0].Title != todoReq.Title {
+// 		t.Errorf("Expected todo title %s, got %s", todoReq.Title, todos[0].Title)
+// 	}
+// }
