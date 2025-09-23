@@ -1,0 +1,12 @@
+
+// DataProcessor interface defines a method for processing data
+
+// // ReverseProcessor struct reverses the input data
+
+// Process method for ReverseProcessor
+
+// Process method for ReverseProcessor
+
+// Function that accepts a DataProcessor interface and returns an UppercaseProcessor
+
+// Function that uses any DataProcessor to process input data

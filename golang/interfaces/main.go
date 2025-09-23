@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// DataProcessor interface defines a method for processing data
 type DataProcessor interface {
 	Process(data string) string
 }
@@ -20,12 +19,10 @@ func (r ReverseProcessor) Process(data string) string {
 	return string(runes)
 }
 
-// Function that accepts a DataProcessor interface and returns an UppercaseProcessor
 func GetDataProcessor() DataProcessor {
 	return ReverseProcessor{}
 }
 
-// Function that uses any DataProcessor to process input data
 func ProcessData(processor DataProcessor, data string) string {
 	return processor.Process(data)
 }
@@ -33,5 +30,5 @@ func ProcessData(processor DataProcessor, data string) string {
 func main() {
 	processor := GetDataProcessor()
 	result := ProcessData(processor, "hello world")
-	fmt.Println(result) // Output: HELLO WORLD
+	fmt.Println(result)
 }
