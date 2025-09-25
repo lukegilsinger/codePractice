@@ -1,4 +1,6 @@
-// internal/migrations/migrations.go (UPDATED for SQL files)
+// ===================================================================
+// internal/migrations/migrations.go (UPDATED) - Driver-aware migrations
+// ===================================================================
 package migrations
 
 import (
@@ -23,23 +25,24 @@ type Migration struct {
 
 type Migrator struct {
 	db            *sql.DB
+	driver        string
 	migrationsDir string
 	logger        *logger.Logger
 }
 
-func NewMigrator(db *sql.DB, logger *logger.Logger) *Migrator {
+func NewMigrator(db *sql.DB, driver string, logger *logger.Logger) *Migrator {
 	return &Migrator{
 		db:            db,
-		migrationsDir: "migrations", // Directory containing SQL files
+		driver:        driver,
+		migrationsDir: "/Users/lukegilsinger/Documents/GitHub/codePractice/golang/cmd/todo-list-2/internal/migrations",
 		logger:        logger,
 	}
 }
 
-// LoadMigrations reads migration files from the migrations directory
+// LoadMigrations reads migration files, choosing driver-specific files when available
 func (m *Migrator) LoadMigrations() ([]Migration, error) {
 	migrations := make(map[int]*Migration)
 
-	// Read all files in migrations directory
 	files, err := os.ReadDir(m.migrationsDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
@@ -47,6 +50,8 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 
 	// Pattern: 001_description_up.sql or 001_description_down.sql
 	pattern := regexp.MustCompile(`^(\d{3})_(.+)_(up|down)\.sql`)
+	// // Pattern: 001_description_up.sql or 001_description_postgres_up.sql
+	// pattern := regexp.MustCompile(`^(\d{3})_(.+?)(?:_(postgres|sqlite))?_(up|down)\.sql$`)
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -54,18 +59,24 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 		}
 
 		matches := pattern.FindStringSubmatch(file.Name())
-		if len(matches) != 4 {
-			continue // Skip files that don't match pattern
+		if len(matches) < 4 {
+			continue
 		}
 
 		versionStr := matches[1]
 		description := strings.ReplaceAll(matches[2], "_", " ")
+		// driverSpecific := matches[3]
 		direction := matches[3]
 
 		version, err := strconv.Atoi(versionStr)
 		if err != nil {
-			continue // Skip invalid version numbers
+			continue
 		}
+
+		// Skip driver-specific files that don't match current driver
+		// if driverSpecific != "" {
+		// 	continue // TODO
+		// }
 
 		// Read SQL content
 		content, err := os.ReadFile(filepath.Join(m.migrationsDir, file.Name()))
@@ -75,7 +86,7 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 
 		sqlContent := strings.TrimSpace(string(content))
 		if sqlContent == "" {
-			continue // Skip empty files
+			continue
 		}
 
 		// Get or create migration entry
@@ -97,7 +108,6 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 	// Convert map to slice and sort by version
 	var result []Migration
 	for _, migration := range migrations {
-		// Only include migrations that have an UP script
 		if migration.UpSQL != "" {
 			result = append(result, *migration)
 		}

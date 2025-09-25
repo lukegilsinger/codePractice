@@ -29,7 +29,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 	}
 
 	// Run migrations to set up schema
-	migrator := migrations.NewMigrator(conn, logger)
+	migrator := migrations.NewMigrator(conn, "sqlite", logger)
 	if err := migrator.MigrateUp(); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}

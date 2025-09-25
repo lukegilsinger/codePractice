@@ -1,11 +1,10 @@
 // ===================================================================
-// internal/config/config.go (NEW FILE)
+// internal/config/config.go (UPDATED) - Environment-based DB selection
 // ===================================================================
 package config
 
 import (
 	"os"
-	"strconv"
 )
 
 type Config struct {
@@ -14,30 +13,41 @@ type Config struct {
 	LogLevel    string
 	LogFormat   string
 	JWTSecret   string
+	Environment string
 }
 
 func Load() *Config {
 	return &Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", "todos.db"),
+		DatabaseURL: getDatabaseURL(),
 		LogLevel:    getEnv("LOG_LEVEL", "info"),
-		LogFormat:   getEnv("LOG_FORMAT", "text"), // "text" or "json"
+		LogFormat:   getEnv("LOG_FORMAT", "text"),
 		JWTSecret:   getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		Environment: getEnv("ENVIRONMENT", "development"),
+	}
+}
+
+func getDatabaseURL() string {
+	// Check for explicit database URL first
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		return url
+	}
+
+	// Environment-based defaults
+	env := getEnv("ENVIRONMENT", "development")
+	switch env {
+	case "production":
+		return getEnv("DATABASE_URL", "postgres://todouser:todopass@localhost:5432/todos?sslmode=require")
+	case "test":
+		return getEnv("TEST_DATABASE_URL", ":memory:")
+	default: // development
+		return getEnv("DATABASE_URL", "data/todos.db")
 	}
 }
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
-	}
-	return defaultValue
-}
-
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
 	}
 	return defaultValue
 }

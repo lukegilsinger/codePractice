@@ -19,7 +19,7 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 # Run the application
 start:
 	@echo "Running the application..."
-	DATABASE_URL=${DATABASE_URL} go run cmd/server/main.go
+	DATABASE_URL=${DATABASE_URL} APP_ENV=deva go run cmd/server/main.go
 
 # Run locally (without Docker)
 run:

@@ -15,43 +15,59 @@ import (
 )
 
 type DB struct {
-	conn   *sql.DB
-	logger *logger.Logger
+	conn    *sql.DB
+	driver  DatabaseDriver
+	queries *QueryBuilder
+	logger  *logger.Logger
 }
 
 func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
 	logger.Info("Creating Database from source", "dataSourceName", dataSourceName)
-	conn, err := sql.Open("sqlite3", dataSourceName)
+	conn, driver, err := Connect(dataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
 	db := &DB{
-		conn:   conn,
-		logger: logger,
+		conn:    conn,
+		driver:  driver,
+		queries: NewQueryBuilder(driver),
+		logger:  logger,
 	}
-	// Run migrations instead of createTables
-	migrator := migrations.NewMigrator(conn, logger)
+
+	// Run migrations
+	migrator := migrations.NewMigrator(conn, "sqlite", logger) //TODO
 	if err := migrator.MigrateUp(); err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("migration failed: %w", err)
 	}
 
 	return db, nil
 }
 
-func NewFromConnection(conn *sql.DB, logger *logger.Logger) *DB {
-	return &DB{conn, logger}
+func NewFromConnection(conn *sql.DB, driver DatabaseDriver, logger *logger.Logger) *DB {
+	return &DB{
+		conn:    conn,
+		driver:  driver,
+		queries: NewQueryBuilder(driver),
+		logger:  logger,
+	}
 }
 
 func (db *DB) Close() error {
 	return db.conn.Close()
 }
 
+// GetDriver returns the current database driver
+func (db *DB) GetDriver() DatabaseDriver {
+	return db.driver
+}
+
 // ===================================================================
 // USER CRUD OPERATIONS
 // ===================================================================
 
-// Update the CreateUser method with logging:
+// Updated CreateUser method with driver-specific queries
 func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	start := time.Now()
 
@@ -64,7 +80,8 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 
 	// Check if username already exists
 	var count int
-	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", req.Username).Scan(&count)
+	checkQuery := fmt.Sprintf("SELECT COUNT(*) FROM users WHERE username = %s", db.queries.Placeholder(1))
+	err = db.conn.QueryRow(checkQuery, req.Username).Scan(&count)
 	if err != nil {
 		db.logger.LogDBOperation("check_username", "users", 0, time.Since(start), err)
 		return nil, err
@@ -76,11 +93,7 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	}
 
 	// Insert user
-	query := `
-    INSERT INTO users (username, email, password, created_at, updated_at) 
-    VALUES (?, ?, ?, ?, ?) 
-    RETURNING id, username, email, created_at, updated_at`
-
+	query := db.queries.BuildCreateUserQuery()
 	now := time.Now()
 	row := db.conn.QueryRow(query, req.Username, req.Email, string(hashedPassword), now, now)
 
@@ -98,7 +111,6 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	err = db.createDefaultCategoriesForUser(user.ID)
 	if err != nil {
 		db.logger.Warn("Failed to create default categories", "user_id", user.ID, "error", err.Error())
-		// Don't fail user creation if default categories fail
 	} else {
 		db.logger.Debug("Default categories created", "user_id", user.ID)
 	}
@@ -106,11 +118,11 @@ func (db *DB) CreateUser(req models.RegisterRequest) (*models.User, error) {
 	return user, nil
 }
 
-// Update AuthenticateUser method:
+// Updated AuthenticateUser method
 func (db *DB) AuthenticateUser(username, password string) (*models.User, error) {
 	start := time.Now()
 
-	query := `SELECT id, username, email, password, created_at, updated_at FROM users WHERE username = ?`
+	query := db.queries.BuildGetUserQuery()
 
 	user := &models.User{}
 	row := db.conn.QueryRow(query, username)
@@ -266,7 +278,10 @@ func (db *DB) DeleteCategory(userID, id int) error {
 // TODO CRUD OPERATIONS (UPDATED with user filtering)
 // ===================================================================
 
+// Updated CreateTodo method
 func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo, error) {
+	start := time.Now()
+
 	// Verify category belongs to user if category_id is provided
 	if req.CategoryID != nil {
 		_, err := db.GetCategoryByID(userID, *req.CategoryID)
@@ -275,17 +290,14 @@ func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo
 		}
 	}
 
-	query := `
-    INSERT INTO todos (user_id, title, description, category_id, created_at, updated_at) 
-    VALUES (?, ?, ?, ?, ?, ?) 
-    RETURNING id, user_id, title, description, completed, category_id, created_at, updated_at`
-
+	query := db.queries.BuildCreateTodoQuery()
 	now := time.Now()
 	row := db.conn.QueryRow(query, userID, req.Title, req.Description, req.CategoryID, now, now)
 
 	todo := &models.Todo{}
 	err := row.Scan(&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &todo.CategoryID, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
+		db.logger.LogDBOperation("create_todo", "todos", userID, time.Since(start), err)
 		return nil, err
 	}
 
@@ -297,6 +309,7 @@ func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo
 		}
 	}
 
+	db.logger.LogDBOperation("create_todo", "todos", userID, time.Since(start), nil)
 	return todo, nil
 }
 

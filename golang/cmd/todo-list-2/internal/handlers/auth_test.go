@@ -24,7 +24,7 @@ func TestAuthHandler_Register(t *testing.T) {
 	testDB := testutil.SetupTestDB(t)
 	defer testDB.Conn.Close()
 
-	db := database.NewFromConnection(testDB.Conn, logger)
+	db := database.NewFromConnection(testDB.Conn, 0, logger)
 	handler := NewAuthHandler(db, logger)
 
 	tests := []struct {
@@ -103,7 +103,7 @@ func TestAuthHandler_Login(t *testing.T) {
 	defer testDB.Conn.Close()
 
 	// Create database.DB wrapper
-	db := database.NewFromConnection(testDB.Conn, logger)
+	db := database.NewFromConnection(testDB.Conn, 0, logger)
 
 	// Create a test user
 	testUser := testutil.CreateTestUser(t, testDB)

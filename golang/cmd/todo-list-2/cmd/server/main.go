@@ -5,9 +5,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -23,6 +25,20 @@ import (
 )
 
 func main() {
+	exePath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	// Absolute path to the executable
+	fmt.Println("Executable Path:", exePath)
+
+	// Directory of the executable
+	fmt.Println("Executable Dir:", filepath.Dir(exePath))
+
+	test := os.Getenv("APP_ENV")
+	fmt.Println("TESTING: ", test)
+	test2 := os.Getenv("DATABASE_URL")
+	fmt.Println("TESTING: ", test2)
 	// Load configuration
 	cfg := config.Load()
 
@@ -95,7 +111,7 @@ func main() {
 	protected.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
 	// Serve static files
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("/Users/lukegilsinger/Documents/GitHub/codePractice/golang/cmd/todo-list-2/static/")))
 
 	// Setup CORS
 	c := cors.New(cors.Options{
