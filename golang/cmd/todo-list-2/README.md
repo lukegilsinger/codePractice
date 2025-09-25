@@ -1,9 +1,14 @@
 # How to use
 `make start`
 
+
+
 ## Docker Commands
 `docker build -t todo-app .`
 `docker run -p 8080:8080 -e JWT_SECRET=local-dev-secret todo-app`
+
+`docker run --name todo_postgres -e POSTGRES_PASSWORD=password -d -p 5431:5432 postgres`
+
 ## Docker Compose
 `docker-compose up --build`
 `docker-compose down`
