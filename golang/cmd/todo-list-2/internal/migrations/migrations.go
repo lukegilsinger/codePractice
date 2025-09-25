@@ -34,7 +34,7 @@ func NewMigrator(db *sql.DB, driver string, logger *logger.Logger, basePath stri
 	return &Migrator{
 		db:            db,
 		driver:        driver,
-		migrationsDir: fmt.Sprintf("%s/%s", basePath, "internal/migrations"),
+		migrationsDir: fmt.Sprintf("%s/%s", basePath, "migrations"),
 		logger:        logger,
 	}
 }
@@ -49,9 +49,9 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 	}
 
 	// Pattern: 001_description_up.sql or 001_description_down.sql
-	pattern := regexp.MustCompile(`^(\d{3})_(.+)_(up|down)\.sql`)
+	// pattern := regexp.MustCompile(`^(\d{3})_(.+)_(up|down)\.sql`)
 	// // Pattern: 001_description_up.sql or 001_description_postgres_up.sql
-	// pattern := regexp.MustCompile(`^(\d{3})_(.+?)(?:_(postgres|sqlite))?_(up|down)\.sql$`)
+	pattern := regexp.MustCompile(`^(\d{3})_(.+?)(?:_(postgres|sqlite))?_(up|down)\.sql$`)
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -65,8 +65,8 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 
 		versionStr := matches[1]
 		description := strings.ReplaceAll(matches[2], "_", " ")
-		// driverSpecific := matches[3]
-		direction := matches[3]
+		driverSpecific := matches[3]
+		direction := matches[4]
 
 		version, err := strconv.Atoi(versionStr)
 		if err != nil {
@@ -74,9 +74,9 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 		}
 
 		// Skip driver-specific files that don't match current driver
-		// if driverSpecific != "" {
-		// 	continue // TODO
-		// }
+		if driverSpecific != m.driver {
+			continue
+		}
 
 		// Read SQL content
 		content, err := os.ReadFile(filepath.Join(m.migrationsDir, file.Name()))
@@ -122,13 +122,27 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 
 // createMigrationTable ensures the migrations tracking table exists
 func (m *Migrator) createMigrationTable() error {
-	query := `
+	querySqlLite := `
         CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY,
             description TEXT NOT NULL,
             applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `
+	queryPg := `
+	    CREATE TABLE IF NOT EXISTS schema_migrations (
+            version INTEGER PRIMARY KEY,
+            description TEXT NOT NULL,
+            applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+	`
+	var query string
+	switch m.driver {
+	case "sqlite":
+		query = querySqlLite
+	case "postgres":
+		query = queryPg
+	}
 	_, err := m.db.Exec(query)
 	return err
 }
@@ -199,8 +213,8 @@ func (m *Migrator) MigrateUp() error {
 		}
 
 		// Record that migration was applied
-		if _, err := tx.Exec(
-			"INSERT INTO schema_migrations (version, description, applied_at) VALUES (?, ?, ?)",
+		if _, err := tx.Exec( // TODO
+			"INSERT INTO schema_migrations (version, description, applied_at) VALUES ($1, $2, $3)",
 			migration.Version, migration.Description, time.Now(),
 		); err != nil {
 			tx.Rollback()

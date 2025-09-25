@@ -36,7 +36,17 @@ func New(dataSourceName string, basePath string, logger *logger.Logger) (*DB, er
 	}
 
 	// Run migrations
-	migrator := migrations.NewMigrator(conn, "sqlite", logger, basePath) //TODO
+	var driverStr string
+	switch driver {
+	case 0:
+		driverStr = "sqlite"
+	case 1:
+		driverStr = "postgres"
+	default:
+		driverStr = "sqlite"
+	}
+
+	migrator := migrations.NewMigrator(conn, driverStr, logger, basePath) //TODO
 	if err := migrator.MigrateUp(); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("migration failed: %w", err)

@@ -88,3 +88,11 @@ func (qb *QueryBuilder) BuildCreateTodoQuery() string {
 		qb.Placeholder(1), qb.Placeholder(2), qb.Placeholder(3),
 		qb.Placeholder(4), qb.Placeholder(5), qb.Placeholder(6))
 }
+
+// BuildCreateUserQuery builds the create user query
+func (qb *QueryBuilder) BuildRecordMigrationQuery() string {
+	return fmt.Sprintf(`
+    INSERT INTO schema_migrations (version, description, applied_at) 
+    VALUES (%s, %s, %s) `,
+		qb.Placeholder(1), qb.Placeholder(2), qb.Placeholder(3))
+}

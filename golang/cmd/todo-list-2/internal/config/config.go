@@ -30,7 +30,7 @@ func Load() *Config {
 }
 
 func getDatabaseURL() string {
-	// Check for explicit database URL first
+	// Check for explicit database URL first TODO
 	if url := os.Getenv("DATABASE_URL"); url != "" {
 		return url
 	}

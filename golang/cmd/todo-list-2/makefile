@@ -7,7 +7,8 @@ DOCKER_PORT=8080
 
 # Server
 PORT=8080
-DATABASE_URL=data/todos.db
+# DATABASE_URL=data/todos.db
+DATABASE_URL=postgres://postgres:password@localhost:5431/postgres?sslmode=disable
 
 # Logging Configuration  
 LOG_LEVEL=info          # debug, info, warn, error
