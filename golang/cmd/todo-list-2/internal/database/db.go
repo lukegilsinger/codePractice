@@ -21,9 +21,9 @@ type DB struct {
 	logger  *logger.Logger
 }
 
-func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
+func New(dataSourceName string, basePath string, logger *logger.Logger) (*DB, error) {
 	logger.Info("Creating Database from source", "dataSourceName", dataSourceName)
-	conn, driver, err := Connect(dataSourceName)
+	conn, driver, err := Connect(dataSourceName, basePath)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func New(dataSourceName string, logger *logger.Logger) (*DB, error) {
 	}
 
 	// Run migrations
-	migrator := migrations.NewMigrator(conn, "sqlite", logger) //TODO
+	migrator := migrations.NewMigrator(conn, "sqlite", logger, basePath) //TODO
 	if err := migrator.MigrateUp(); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("migration failed: %w", err)

@@ -23,7 +23,8 @@
             "program": "golang/cmd/todo-list-2/cmd/server/main.go",
             "env": {
                 "APP_ENV": "devo",
-                "DATABASE_URL": "data/todos.db"
+                "DATABASE_URL": "data/todos.db",
+                "BASE_PATH": ""
             },
             "args": []
         }

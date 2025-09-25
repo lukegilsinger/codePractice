@@ -53,7 +53,7 @@ func main() {
 	auth.SetJWTSecret(cfg.JWTSecret)
 
 	// Initialize database
-	db, err := database.New(cfg.DatabaseURL, logger)
+	db, err := database.New(cfg.DatabaseURL, cfg.BasePath, logger)
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err.Error())
 		os.Exit(1)
@@ -111,7 +111,8 @@ func main() {
 	protected.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
 	// Serve static files
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("/Users/lukegilsinger/Documents/GitHub/codePractice/golang/cmd/todo-list-2/static/")))
+	staticFilePath := fmt.Sprintf("%s/%s/", cfg.BasePath, "static")
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(staticFilePath)))
 
 	// Setup CORS
 	c := cors.New(cors.Options{

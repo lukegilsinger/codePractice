@@ -14,6 +14,7 @@ type Config struct {
 	LogFormat   string
 	JWTSecret   string
 	Environment string
+	BasePath    string
 }
 
 func Load() *Config {
@@ -24,6 +25,7 @@ func Load() *Config {
 		LogFormat:   getEnv("LOG_FORMAT", "text"),
 		JWTSecret:   getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
 		Environment: getEnv("ENVIRONMENT", "development"),
+		BasePath:    getEnv("BASE_PATH", "."),
 	}
 }
 

@@ -42,20 +42,24 @@ func ParseDataSource(dataSource string) *DriverConfig {
 }
 
 // Connect creates a database connection based on the data source
-func Connect(dataSource string) (*sql.DB, DatabaseDriver, error) {
+func Connect(dataSource string, basePath string) (*sql.DB, DatabaseDriver, error) {
 	config := ParseDataSource(dataSource)
 
 	var driverName string
+	var dataSourcePath string
 	switch config.Driver {
 	case PostgreSQL:
 		driverName = "postgres"
+		dataSourcePath = config.DataSource
 	case SQLite:
 		driverName = "sqlite3"
+		dataSourcePath = fmt.Sprintf("%s/%s", basePath, dataSource)
 	default:
 		return nil, SQLite, fmt.Errorf("unsupported database driver")
 	}
-	fmt.Println("SOURCE: ", config.DataSource)
-	conn, err := sql.Open(driverName, config.DataSource)
+
+	fmt.Println("SOURCE: ", dataSourcePath)
+	conn, err := sql.Open(driverName, dataSourcePath)
 	if err != nil {
 		return nil, config.Driver, err
 	}

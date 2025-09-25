@@ -30,11 +30,11 @@ type Migrator struct {
 	logger        *logger.Logger
 }
 
-func NewMigrator(db *sql.DB, driver string, logger *logger.Logger) *Migrator {
+func NewMigrator(db *sql.DB, driver string, logger *logger.Logger, basePath string) *Migrator {
 	return &Migrator{
 		db:            db,
 		driver:        driver,
-		migrationsDir: "/Users/lukegilsinger/Documents/GitHub/codePractice/golang/cmd/todo-list-2/internal/migrations",
+		migrationsDir: fmt.Sprintf("%s/%s", basePath, "internal/migrations"),
 		logger:        logger,
 	}
 }
