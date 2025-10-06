@@ -46,6 +46,7 @@ func New(dataSourceName string, basePath string, logger *logger.Logger) (*DB, er
 		driverStr = "sqlite"
 	}
 
+	logger.Info("Starting DB: ", "database", driverStr)
 	migrator := migrations.NewMigrator(conn, driverStr, logger, basePath) //TODO
 	if err := migrator.MigrateUp(); err != nil {
 		conn.Close()
@@ -161,7 +162,7 @@ func (db *DB) AuthenticateUser(username, password string) (*models.User, error) 
 }
 
 func (db *DB) GetUserByID(id int) (*models.User, error) {
-	query := `SELECT id, username, email, created_at, updated_at FROM users WHERE id = ?`
+	query := db.queries.BuildGetUserByIdQuery()
 
 	user := &models.User{}
 	row := db.conn.QueryRow(query, id)
@@ -184,8 +185,9 @@ func (db *DB) createDefaultCategoriesForUser(userID int) error {
 
 	for _, cat := range defaults {
 		now := time.Now()
+		q := db.queries.BuildCreateCategoryQuery()
 		_, err := db.conn.Exec(
-			"INSERT INTO categories (user_id, name, description, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+			q,
 			userID, cat.name, cat.description, cat.color, now, now,
 		)
 		if err != nil {
@@ -201,10 +203,7 @@ func (db *DB) createDefaultCategoriesForUser(userID int) error {
 // ===================================================================
 
 func (db *DB) CreateCategory(userID int, req models.CreateCategoryRequest) (*models.Category, error) {
-	query := `
-    INSERT INTO categories (user_id, name, description, color, created_at, updated_at) 
-    VALUES (?, ?, ?, ?, ?, ?) 
-    RETURNING id, user_id, name, description, color, created_at, updated_at`
+	query := db.queries.BuildCreateCategoryQuery()
 
 	now := time.Now()
 	color := req.Color
@@ -220,7 +219,7 @@ func (db *DB) CreateCategory(userID int, req models.CreateCategoryRequest) (*mod
 }
 
 func (db *DB) GetAllCategories(userID int) ([]models.Category, error) {
-	query := `SELECT id, user_id, name, description, color, created_at, updated_at FROM categories WHERE user_id = ? ORDER BY name`
+	query := db.queries.BuildGetCategoriesQuery()
 
 	rows, err := db.conn.Query(query, userID)
 	if err != nil {
@@ -241,7 +240,7 @@ func (db *DB) GetAllCategories(userID int) ([]models.Category, error) {
 }
 
 func (db *DB) GetCategoryByID(userID, id int) (*models.Category, error) {
-	query := `SELECT id, user_id, name, description, color, created_at, updated_at FROM categories WHERE id = ? AND user_id = ?`
+	query := db.queries.BuildGetCategoriesByIdQuery()
 
 	category := &models.Category{}
 	row := db.conn.QueryRow(query, id, userID)
@@ -269,7 +268,7 @@ func (db *DB) UpdateCategory(userID, id int, req models.UpdateCategoryRequest) (
 	}
 	current.UpdatedAt = time.Now()
 
-	query := `UPDATE categories SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ? AND user_id = ?`
+	query := db.queries.BuildUpdateCategoriesQuery()
 	_, err = db.conn.Exec(query, current.Name, current.Description, current.Color, current.UpdatedAt, id, userID)
 	if err != nil {
 		return nil, err
@@ -279,7 +278,7 @@ func (db *DB) UpdateCategory(userID, id int, req models.UpdateCategoryRequest) (
 }
 
 func (db *DB) DeleteCategory(userID, id int) error {
-	query := `DELETE FROM categories WHERE id = ? AND user_id = ?`
+	query := db.queries.BuildDeleteCategoriesQuery()
 	_, err := db.conn.Exec(query, id, userID)
 	return err
 }
@@ -324,14 +323,7 @@ func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo
 }
 
 func (db *DB) GetAllTodos(userID int) ([]models.Todo, error) {
-	query := `
-    SELECT 
-        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
-        c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
-    FROM todos t 
-    LEFT JOIN categories c ON t.category_id = c.id 
-    WHERE t.user_id = ?
-    ORDER BY t.created_at DESC`
+	query := db.queries.BuildGetTodosQuery()
 
 	rows, err := db.conn.Query(query, userID)
 	if err != nil {
@@ -377,13 +369,7 @@ func (db *DB) GetAllTodos(userID int) ([]models.Todo, error) {
 }
 
 func (db *DB) GetTodoByID(userID, id int) (*models.Todo, error) {
-	query := `
-    SELECT 
-        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
-        c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
-    FROM todos t 
-    LEFT JOIN categories c ON t.category_id = c.id 
-    WHERE t.id = ? AND t.user_id = ?`
+	query := db.queries.BuildGetTodosByIdQuery()
 
 	todo := &models.Todo{}
 	var categoryID, catID, catUserID sql.NullInt64
@@ -446,7 +432,7 @@ func (db *DB) UpdateTodo(userID, id int, req models.UpdateTodoRequest) (*models.
 	}
 	current.UpdatedAt = time.Now()
 
-	query := `UPDATE todos SET title = ?, description = ?, completed = ?, category_id = ?, updated_at = ? WHERE id = ? AND user_id = ?`
+	query := db.queries.BuildUpdateTodoQuery()
 	_, err = db.conn.Exec(query, current.Title, current.Description, current.Completed, current.CategoryID, current.UpdatedAt, id, userID)
 	if err != nil {
 		return nil, err
@@ -456,7 +442,7 @@ func (db *DB) UpdateTodo(userID, id int, req models.UpdateTodoRequest) (*models.
 }
 
 func (db *DB) DeleteTodo(userID, id int) error {
-	query := `DELETE FROM todos WHERE id = ? AND user_id = ?`
+	query := db.queries.BuildDeleteTodoQuery()
 	_, err := db.conn.Exec(query, id, userID)
 	return err
 }

@@ -35,7 +35,7 @@ func main() {
 	}
 	defer db.Close()
 
-	migrator := migrations.NewMigrator(db, "sqlite", logger)
+	migrator := migrations.NewMigrator(db, "sqlite", logger, cfg.BasePath)
 
 	command := os.Args[1]
 

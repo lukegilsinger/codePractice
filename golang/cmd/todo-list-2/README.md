@@ -16,6 +16,9 @@
 ## Note
 * If schema changes, then you need to remove database.db file
 
+# BUGS
+update status
+
 # TODO
 - [x] logging
 - [x] frontend for user auth
@@ -29,7 +32,7 @@
 - [ ] ci/cd - github actions
 - [ ] deploy
 - [ ] file attachments
-- [ ] 
-- [ ] 
+- [ ] images
+- [ ] repeated tasks
 - [ ] 
 - [ ] 
