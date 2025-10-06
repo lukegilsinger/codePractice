@@ -28,7 +28,7 @@ func main() {
 	cfg := config.Load()
 
 	// Connect to database
-	db, err := sql.Open("sqlite3", cfg.DatabaseURL)
+	db, err := sql.Open("sqlite3", fmt.Sprintf("%s/%s", cfg.BasePath, cfg.DatabaseURL))
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err.Error())
 		os.Exit(1)
