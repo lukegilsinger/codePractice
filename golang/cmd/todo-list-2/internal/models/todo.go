@@ -14,14 +14,18 @@ type Todo struct {
 	CategoryID  *int      `json:"category_id" db:"category_id"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	Frequency   *string   `json:"frequency" db:"frequency"`
+	Priority    *int      `json:"priority" db:"priority"`
 
 	Category *Category `json:"category,omitempty"`
 }
 
 type CreateTodoRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	CategoryID  *int   `json:"category_id,omitempty"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	CategoryID  *int    `json:"category_id,omitempty"`
+	Frequency   *string `json:"frequency,omitempty"`
+	Priority    *int    `json:"priority,omitempty"`
 	// UserID will come from JWT token, not request body
 }
 
@@ -30,4 +34,6 @@ type UpdateTodoRequest struct {
 	Description *string `json:"description,omitempty"`
 	Completed   *bool   `json:"completed,omitempty"`
 	CategoryID  *int    `json:"category_id,omitempty"`
+	Frequency   *string `json:"frequency,omitempty"`
+	Priority    *int    `json:"priority,omitempty"`
 }

@@ -301,10 +301,13 @@ func (db *DB) CreateTodo(userID int, req models.CreateTodoRequest) (*models.Todo
 
 	query := db.queries.BuildCreateTodoQuery()
 	now := time.Now()
-	row := db.conn.QueryRow(query, userID, req.Title, req.Description, req.CategoryID, now, now)
+	row := db.conn.QueryRow(query, userID, req.Title, req.Description, req.CategoryID, now, now, req.Frequency, req.Priority)
 
 	todo := &models.Todo{}
-	err := row.Scan(&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &todo.CategoryID, &todo.CreatedAt, &todo.UpdatedAt)
+	err := row.Scan(
+		&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &todo.CategoryID,
+		&todo.CreatedAt, &todo.UpdatedAt, &todo.Frequency, &todo.Priority,
+	)
 	if err != nil {
 		db.logger.LogDBOperation("create_todo", "todos", userID, time.Since(start), err)
 		return nil, err
@@ -339,7 +342,8 @@ func (db *DB) GetAllTodos(userID int) ([]models.Todo, error) {
 		var catCreated, catUpdated sql.NullTime
 
 		err := rows.Scan(
-			&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
+			&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID,
+			&todo.CreatedAt, &todo.UpdatedAt, &todo.Frequency, &todo.Priority,
 			&catID, &catUserID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
 		)
 		if err != nil {
@@ -378,7 +382,8 @@ func (db *DB) GetTodoByID(userID int, id int) (*models.Todo, error) {
 
 	row := db.conn.QueryRow(query, id, userID)
 	err := row.Scan(
-		&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID, &todo.CreatedAt, &todo.UpdatedAt,
+		&todo.ID, &todo.UserID, &todo.Title, &todo.Description, &todo.Completed, &categoryID,
+		&todo.CreatedAt, &todo.UpdatedAt, &todo.Frequency, &todo.Priority,
 		&catID, &catUserID, &catName, &catDesc, &catColor, &catCreated, &catUpdated,
 	)
 	if err != nil {
@@ -420,6 +425,12 @@ func (db *DB) UpdateTodo(userID int, id int, req models.UpdateTodoRequest) (*mod
 	if req.Completed != nil {
 		current.Completed = *req.Completed
 	}
+	if req.Frequency != nil {
+		current.Frequency = req.Frequency
+	}
+	if req.Priority != nil {
+		current.Priority = req.Priority
+	}
 	if req.CategoryID != nil {
 		// Verify category belongs to user if not nil
 		if *req.CategoryID != 0 {
@@ -433,7 +444,11 @@ func (db *DB) UpdateTodo(userID int, id int, req models.UpdateTodoRequest) (*mod
 	current.UpdatedAt = time.Now()
 
 	query := db.queries.BuildUpdateTodoQuery()
-	_, err = db.conn.Exec(query, current.Title, current.Description, current.Completed, current.CategoryID, current.UpdatedAt, id, userID)
+	_, err = db.conn.Exec(
+		query, current.Title, current.Description, current.Completed, current.CategoryID,
+		current.UpdatedAt, current.Frequency, current.Priority,
+		id, userID,
+	)
 	if err != nil {
 		return nil, err
 	}

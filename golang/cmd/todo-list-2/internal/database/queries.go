@@ -141,18 +141,19 @@ func (qb *QueryBuilder) BuildDeleteCategoriesQuery() string {
 // BuildCreateTodoQuery builds the create todo query
 func (qb *QueryBuilder) BuildCreateTodoQuery() string {
 	return fmt.Sprintf(`
-    INSERT INTO todos (user_id, title, description, category_id, created_at, updated_at) 
-    VALUES (%s, %s, %s, %s, %s, %s) 
-    RETURNING id, user_id, title, description, completed, category_id, created_at, updated_at`,
+    INSERT INTO todos (user_id, title, description, category_id, created_at, updated_at, frequency, priority) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+    RETURNING id, user_id, title, description, completed, category_id, created_at, updated_at, frequency, priority`,
 		qb.Placeholder(1), qb.Placeholder(2), qb.Placeholder(3),
-		qb.Placeholder(4), qb.Placeholder(5), qb.Placeholder(6))
+		qb.Placeholder(4), qb.Placeholder(5), qb.Placeholder(6),
+		qb.Placeholder(7), qb.Placeholder(8))
 }
 
 // BuildGetTodoQuery
 func (qb *QueryBuilder) BuildGetTodosQuery() string {
 	return fmt.Sprintf(`
     SELECT 
-        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
+        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at, t.frequency, t.priority,
         c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
     FROM todos t 
     LEFT JOIN categories c ON t.category_id = c.id 
@@ -164,7 +165,7 @@ func (qb *QueryBuilder) BuildGetTodosQuery() string {
 func (qb *QueryBuilder) BuildGetTodosByIdQuery() string {
 	return fmt.Sprintf(`
     SELECT 
-        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at,
+        t.id, t.user_id, t.title, t.description, t.completed, t.category_id, t.created_at, t.updated_at, t.frequency, t.priority,
         c.id, c.user_id, c.name, c.description, c.color, c.created_at, c.updated_at
     FROM todos t 
     LEFT JOIN categories c ON t.category_id = c.id 
@@ -175,11 +176,12 @@ func (qb *QueryBuilder) BuildGetTodosByIdQuery() string {
 func (qb *QueryBuilder) BuildUpdateTodoQuery() string {
 	return fmt.Sprintf(`
 	UPDATE todos 
-	SET title = %s, description = %s, completed = %s, category_id = %s, updated_at = %s 
+	SET title = %s, description = %s, completed = %s, category_id = %s,
+	updated_at = %s, frequency = %s, priority = %s 
 	WHERE id = %s AND user_id = %s`,
 		qb.Placeholder(1), qb.Placeholder(2), qb.Placeholder(3),
 		qb.Placeholder(4), qb.Placeholder(5), qb.Placeholder(6),
-		qb.Placeholder(7))
+		qb.Placeholder(7), qb.Placeholder(8), qb.Placeholder(9))
 }
 
 func (qb *QueryBuilder) BuildDeleteTodoQuery() string {
@@ -189,6 +191,9 @@ func (qb *QueryBuilder) BuildDeleteTodoQuery() string {
 		qb.Placeholder(1), qb.Placeholder(2))
 }
 
+// ===================================================================
+// MIGRATION QUERIES
+// ===================================================================
 func (qb *QueryBuilder) BuildRecordMigrationQuery() string {
 	return fmt.Sprintf(`
     INSERT INTO schema_migrations (version, description, applied_at) 
