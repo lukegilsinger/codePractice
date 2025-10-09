@@ -345,6 +345,7 @@ function displayTodos() {
     
     // Filter todos based on selected category
     let filteredTodos = todos;
+    console.log("TODOS: ", todos)
     if (selectedCategoryFilter !== null) {
         filteredTodos = todos.filter(todo => 
             todo.category_id === selectedCategoryFilter
@@ -375,6 +376,8 @@ function displayTodos() {
             ${categoryBadge}
             <div class="todo-title">${escapeHtml(todo.title)}</div>
             <div class="todo-description">${escapeHtml(todo.description) || 'No description'}</div>
+            <div class="todo-frequency">Frequency: ${escapeHtml(todo.frequency) || 'No freq'}</div>
+            <div class="todo-priority">Priority: ${escapeHtml(todo.priority) || 'No prior'}</div>
             <div class="todo-meta">Created: ${new Date(todo.created_at).toLocaleString()}</div>
             <div class="todo-actions">
                 <button class="btn-success" onclick="toggleComplete(${todo.id}, ${!todo.completed})">
@@ -393,6 +396,7 @@ async function addTodo() {
     const title = document.getElementById('todo-title').value.trim();
     const description = document.getElementById('todo-description').value.trim();
     const categoryId = document.getElementById('todo-category').value;
+    const priority = document.getElementById('todo-priority').value;
     
     if (!title) {
         alert('Title is required!');
@@ -403,6 +407,9 @@ async function addTodo() {
     if (categoryId) {
         payload.category_id = parseInt(categoryId);
     }
+    if (priority) {
+        payload.priority = parseInt(priority);
+    }
     
     try {
         const response = await apiCall('/todos', 'POST', payload);
@@ -411,6 +418,7 @@ async function addTodo() {
             document.getElementById('todo-title').value = '';
             document.getElementById('todo-description').value = '';
             document.getElementById('todo-category').value = '';
+            document.getElementById('todo-priority').value = '';
             await loadTodos();
         } else {
             const error = await response.text();
@@ -448,10 +456,14 @@ async function editTodo(id) {
     const newDescription = prompt('Edit description:', todo.description || '');
     if (newDescription === null) return; // User cancelled
     
+    const newPriority = prompt('Edit priority:', todo.priority || '');
+    if (newPriority === null) return; // User cancelled
+
     try {
         const response = await apiCall(`/todos/${id}`, 'PUT', {
             title: newTitle.trim() || todo.title,
-            description: newDescription.trim()
+            description: newDescription.trim(),
+            priority: parseInt(newPriority.trim())
         });
         
         if (response.ok) {

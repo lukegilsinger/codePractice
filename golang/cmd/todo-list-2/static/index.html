@@ -179,6 +179,8 @@
         .todo-actions { margin-top: 10px; }
         .todo-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
         .todo-description { color: #666; margin-bottom: 10px; }
+        .todo-frequency { color: #c41212; }
+        .todo-priority { color: #872388; }
         .todo-meta { font-size: 12px; color: #999; }
         .filter-section { margin-bottom: 20px; }
         .error { color: #dc3545; margin-top: 5px; font-size: 14px; }
@@ -315,6 +317,10 @@
                         <select id="todo-category">
                             <option value="">No Category</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="todo-priority">Priority</label>
+                        <textarea id="todo-priority" placeholder="(optional)" rows="3"></textarea>
                     </div>
                     <button class="btn-primary" onclick="addTodo()">Add Todo</button>
                 </div>

@@ -124,7 +124,6 @@ func (l *Logger) LogHTTPResponse(method, path string, statusCode int, duration t
 		"duration_ms", duration.Milliseconds(),
 		"user_id", userID,
 	)
-	l.Info("HERE:  ")
 }
 
 // Database operation logging
