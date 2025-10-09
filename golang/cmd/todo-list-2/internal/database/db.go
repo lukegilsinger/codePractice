@@ -368,7 +368,7 @@ func (db *DB) GetAllTodos(userID int) ([]models.Todo, error) {
 	return todos, nil
 }
 
-func (db *DB) GetTodoByID(userID, id int) (*models.Todo, error) {
+func (db *DB) GetTodoByID(userID int, id int) (*models.Todo, error) {
 	query := db.queries.BuildGetTodosByIdQuery()
 
 	todo := &models.Todo{}
@@ -405,7 +405,7 @@ func (db *DB) GetTodoByID(userID, id int) (*models.Todo, error) {
 	return todo, nil
 }
 
-func (db *DB) UpdateTodo(userID, id int, req models.UpdateTodoRequest) (*models.Todo, error) {
+func (db *DB) UpdateTodo(userID int, id int, req models.UpdateTodoRequest) (*models.Todo, error) {
 	current, err := db.GetTodoByID(userID, id)
 	if err != nil {
 		return nil, err
@@ -441,8 +441,26 @@ func (db *DB) UpdateTodo(userID, id int, req models.UpdateTodoRequest) (*models.
 	return db.GetTodoByID(userID, id)
 }
 
-func (db *DB) DeleteTodo(userID, id int) error {
+func (db *DB) DeleteTodo(userID int, id int) error {
 	query := db.queries.BuildDeleteTodoQuery()
 	_, err := db.conn.Exec(query, id, userID)
 	return err
+}
+
+// ===================================================================
+// RUN MIGRATION QUERY
+// ===================================================================
+func (db *DB) RunMigrationExec(query string) error {
+	_, err := db.conn.Exec(query)
+	return err
+}
+
+func (db *DB) RunMigrationQuery(query string) (*sql.Rows, error) {
+	rows, err := db.conn.Query(query)
+	return rows, err
+}
+
+func (db *DB) RunMigrationTransaction(query string) (*sql.Rows, error) {
+	rows, err := db.conn.Query(query)
+	return rows, err
 }

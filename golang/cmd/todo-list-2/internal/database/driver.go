@@ -58,6 +58,7 @@ func Connect(dataSource string, basePath string) (*sql.DB, DatabaseDriver, error
 		return nil, SQLite, fmt.Errorf("unsupported database driver")
 	}
 
+	fmt.Println("DRIVER: ", driverName)
 	fmt.Println("SOURCE: ", dataSourcePath)
 	conn, err := sql.Open(driverName, dataSourcePath)
 	if err != nil {

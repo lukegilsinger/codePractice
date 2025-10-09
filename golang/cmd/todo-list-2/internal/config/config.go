@@ -8,24 +8,26 @@ import (
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
-	LogLevel    string
-	LogFormat   string
-	JWTSecret   string
-	Environment string
-	BasePath    string
+	Port         string
+	DatabaseType string
+	DatabaseURL  string
+	LogLevel     string
+	LogFormat    string
+	JWTSecret    string
+	Environment  string
+	BasePath     string
 }
 
 func Load() *Config {
 	return &Config{
-		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getDatabaseURL(),
-		LogLevel:    getEnv("LOG_LEVEL", "info"),
-		LogFormat:   getEnv("LOG_FORMAT", "text"),
-		JWTSecret:   getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
-		Environment: getEnv("ENVIRONMENT", "development"),
-		BasePath:    getEnv("BASE_PATH", "."),
+		Port:         getEnv("PORT", "8080"),
+		DatabaseType: getEnv("DATABASE_TYPE", "sqlite"),
+		DatabaseURL:  getDatabaseURL(),
+		LogLevel:     getEnv("LOG_LEVEL", "info"),
+		LogFormat:    getEnv("LOG_FORMAT", "text"),
+		JWTSecret:    getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		Environment:  getEnv("ENVIRONMENT", "development"),
+		BasePath:     getEnv("BASE_PATH", "."),
 	}
 }
 

@@ -9,10 +9,12 @@ import (
 	"os"
 	"strconv"
 	"todo-list-2/internal/config"
+
 	"todo-list-2/internal/logger"
 	"todo-list-2/internal/migrations"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"           // PostgreSQL driver
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
 func main() {
@@ -28,14 +30,37 @@ func main() {
 	cfg := config.Load()
 
 	// Connect to database
-	db, err := sql.Open("sqlite3", fmt.Sprintf("%s/%s", cfg.BasePath, cfg.DatabaseURL))
+
+	var driverName string
+	var connString string
+	switch cfg.DatabaseType {
+	case "postgres":
+		fmt.Println("HERE")
+		driverName = "postgres"
+		connString = cfg.DatabaseURL
+	case "sqlite":
+
+		fmt.Println("HEREs")
+		driverName = "sqlite3"
+		connString = fmt.Sprintf("%s/%s", cfg.BasePath, cfg.DatabaseURL)
+	default:
+
+		fmt.Println("HEREo")
+		driverName = "sqlite3"
+		connString = fmt.Sprintf("%s/%s", cfg.BasePath, cfg.DatabaseURL)
+	}
+	fmt.Println("TYPE:", cfg.DatabaseType)
+	fmt.Println("DRIVER: ", driverName)
+	fmt.Println("SOURCE: ", connString)
+
+	db, err := sql.Open(driverName, connString)
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err.Error())
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	migrator := migrations.NewMigrator(db, "sqlite", logger, cfg.BasePath)
+	migrator := migrations.NewMigrator(db, cfg.DatabaseType, logger, cfg.BasePath)
 
 	command := os.Args[1]
 

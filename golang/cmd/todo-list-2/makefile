@@ -9,6 +9,9 @@ DOCKER_PORT=8080
 PORT=8080
 # DATABASE_URL=data/todos.db
 DATABASE_URL=postgres://postgres:password@localhost:5431/postgres?sslmode=disable
+TEST_DATABASE_URL=postgres://postgres:password@localhost:5431/postgres?sslmode=disable
+DATABASE_TYPE=postgres
+
 
 # Logging Configuration  
 LOG_LEVEL=info          # debug, info, warn, error
@@ -72,7 +75,7 @@ test-watch:
 
 # Database migrations
 migrate-up:
-	go run cmd/migrate/main.go up
+	DATABASE_URL=${DATABASE_URL} DATABASE_TYPE=${DATABASE_TYPE} go run cmd/migrate/main.go up
 
 migrate-down:
 	go run cmd/migrate/main.go down
