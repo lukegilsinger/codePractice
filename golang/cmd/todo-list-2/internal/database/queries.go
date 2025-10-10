@@ -38,6 +38,18 @@ func (qb *QueryBuilder) Now() string {
 	}
 }
 
+// NowDate returns the date column type
+func (qb *QueryBuilder) NowDate() string {
+	switch qb.driver {
+	case PostgreSQL:
+		return "CURRENT_DATE"
+	case SQLite:
+		return "DATE('now')"
+	default:
+		return "DATE('now')"
+	}
+}
+
 // Serial returns the auto-increment column definition
 func (qb *QueryBuilder) Serial() string {
 	switch qb.driver {
@@ -188,6 +200,38 @@ func (qb *QueryBuilder) BuildDeleteTodoQuery() string {
 	return fmt.Sprintf(`
 	DELETE FROM todos 
 	WHERE id = %s AND user_id = %s`,
+		qb.Placeholder(1), qb.Placeholder(2))
+}
+
+// ===================================================================
+// TODO_HISTORY QUERIES
+// ===================================================================
+
+// BuildCreateTodoHistoryQuery builds the create todohistory query
+func (qb *QueryBuilder) BuildCreateTodoHistoryQuery() string {
+	return fmt.Sprintf(`
+    INSERT INTO todo_history (todo_id, user_id, completed_at, updated_at, notes) 
+    VALUES (%s, %s, DATE(%s), %s, %s) 
+    RETURNING id, todo_id, user_id, completed_at, updated_at, notes`,
+		qb.Placeholder(1), qb.Placeholder(2), qb.Placeholder(3),
+		qb.Placeholder(4), qb.Placeholder(5))
+}
+
+// BuildGetTodoHistoryCountQuery
+func (qb *QueryBuilder) BuildGetTodoHistoryCountQuery() string {
+	return fmt.Sprintf(`
+	SELECT COUNT(*) FROM todo_history 
+	WHERE todo_id = %s AND user_id = %s 
+	AND DATE(completed_at) = %s`,
+		qb.Placeholder(1), qb.Placeholder(2), qb.NowDate())
+}
+
+// BuildGetTodoHistoryCountQuery
+func (qb *QueryBuilder) BuildGetTodoHistoryQuery() string {
+	return fmt.Sprintf(`
+	SELECT id, todo_id, user_id, completed_at, updated_at, notes FROM todo_history 
+	WHERE todo_id = %s AND user_id = %s 
+	ORDER BY completed_at DESC`,
 		qb.Placeholder(1), qb.Placeholder(2))
 }
 

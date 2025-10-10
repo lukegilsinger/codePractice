@@ -69,6 +69,7 @@ func main() {
 	// Initialize handlers
 	todoHandler := handlers.NewTodoHandler(db)
 	categoryHandler := handlers.NewCategoryHandler(db)
+	todoHistoryHandler := handlers.NewTodoHistoryHandler(db)
 	authHandler := handlers.NewAuthHandler(db, logger)
 
 	// Setup routes
@@ -109,6 +110,11 @@ func main() {
 	protected.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
 	protected.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
 	protected.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
+
+	// TodoHistory routes (all protected)
+	// protected.HandleFunc("/todohistory", todoHandler.GetAllTodos).Methods("GET")
+	protected.HandleFunc("/todos/{id}/complete", todoHistoryHandler.CompleteTodo).Methods("POST")
+	protected.HandleFunc("/todos/{id}/history", todoHistoryHandler.GetTodoHistory).Methods("GET")
 
 	// Serve static files
 	staticFilePath := fmt.Sprintf("%s/%s/", cfg.BasePath, "static")

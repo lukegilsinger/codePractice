@@ -463,6 +463,78 @@ func (db *DB) DeleteTodo(userID int, id int) error {
 }
 
 // ===================================================================
+// TODO_HISTORY CRUD OPERATIONS (UPDATED with user filtering)
+// ===================================================================
+
+// CreateTaskCompletion records a task completion
+func (db *DB) CreateTodoCompletion(userID, todoID int, completedAt time.Time, notes string) (*models.TodoHistory, error) {
+	start := time.Now()
+
+	// Check if already completed today
+	isCompleted, err := db.IsTaskCompletedToday(userID, todoID)
+	if err != nil {
+		return nil, err
+	}
+	if isCompleted {
+		return nil, fmt.Errorf("task already completed this day")
+	}
+
+	var query string
+	now := time.Now()
+
+	query = db.queries.BuildCreateTodoHistoryQuery()
+
+	row := db.conn.QueryRow(query, todoID, userID, completedAt, now, notes)
+
+	completion := &models.TodoHistory{}
+	err = row.Scan(&completion.ID, &completion.TodoID, &completion.UserID, &completion.CompletedAt, &completion.UpdatedAt, &completion.Notes)
+	if err != nil {
+		db.logger.LogDBOperation("create_completion", "task_completions", userID, time.Since(start), err)
+		return nil, err
+	}
+
+	db.logger.LogDBOperation("create_completion", "task_completions", userID, time.Since(start), nil)
+	return completion, nil
+
+}
+
+// IsTaskCompletedToday checks if a task was completed today
+func (db *DB) IsTaskCompletedToday(userID, todoID int) (bool, error) {
+	query := db.queries.BuildGetTodoHistoryCountQuery()
+
+	var count int
+	err := db.conn.QueryRow(query, todoID, userID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (db *DB) GetTodoHistory(userID, todoID int) ([]models.TodoHistory, error) {
+	query := db.queries.BuildGetTodoHistoryQuery()
+	rows, err := db.conn.Query(query, todoID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var completions []models.TodoHistory
+	for rows.Next() {
+		var completion models.TodoHistory
+		err := rows.Scan(&completion.ID, &completion.TodoID, &completion.UserID,
+			&completion.CompletedAt, &completion.UpdatedAt, &completion.Notes)
+		if err != nil {
+			return nil, err
+		}
+		completions = append(completions, completion)
+	}
+
+	return completions, nil
+
+}
+
+// ===================================================================
 // RUN MIGRATION QUERY
 // ===================================================================
 func (db *DB) RunMigrationExec(query string) error {

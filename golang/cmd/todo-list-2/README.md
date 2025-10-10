@@ -22,17 +22,24 @@ update status
 # TODO
 - [x] logging
 - [x] frontend for user auth
+- [x] docker
+- [x] database migrations
+- [x] postgres
+- [x] priority and freq
+- [ ] repeated tasks
+- [ ] seperate front end
+- [ ] history table
 - [ ] validation
 - [ ] error handling
 - [ ] testing
 - [ ] drag and drop
-- [x] docker
-- [x] database migrations
-- [ ] postgres
 - [ ] ci/cd - github actions
 - [ ] deploy
 - [ ] file attachments
 - [ ] images
-- [ ] repeated tasks
+- [ ]
 - [ ] 
+- [ ]
+- [ ]
+- [ ]
 - [ ] 
