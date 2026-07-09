@@ -1,10 +1,7 @@
 package main
 
-import (
-	"fmt"
-	"strings"
-)
+import ()
 
 type DataProcessor2 interface {
-	Process2(data string) strings
+	Process2(data string) string
 }
