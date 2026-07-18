@@ -228,6 +228,8 @@ function updateCategoryUI() {
         div.innerHTML = `
             <div class="category-color" style="background-color: ${cat.color};"></div>
             <span>${cat.name}</span>
+            <button class="btn-danger" onclick="deleteCategory(${cat.id})" 
+                    style="margin-left: auto; padding: 4px 8px; font-size: 12px;">Delete</button>
         `;
         filtersDiv.appendChild(div);
     });
